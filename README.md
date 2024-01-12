@@ -1,2 +1,3 @@
-git submodule init \n
+git submodule init
+
 git submodule update
