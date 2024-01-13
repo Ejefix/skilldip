@@ -1,11 +1,11 @@
 {
     "config": {
         "max_responses": 5,
-        "name": "SkillboxSearchEngine",
-        "version": "0.1"
+        "name": "Diplom",
+        "version": "1.0.0"
     },
     "files": [
-        "../resources/file001.txt",
-
+        "../resources/file001.txt"
     ]
 }
+

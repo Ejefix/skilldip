@@ -1,6 +1,13 @@
-#include "converterjson.h"
+#include <converterjson.h>
+#include <iostream>
+
+
+
+
 
 int main(int argc, char *argv[])
 {
+
+    ConverterJSON x{};
 
 }
