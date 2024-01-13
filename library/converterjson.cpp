@@ -7,8 +7,8 @@
 
 // количество ядер
 static const unsigned int num_threads = std::thread::hardware_concurrency();
-const std::string main_project_version {PROJECT_VERSION};
-const std::string project_name{PROJECT_NAME};
+const std::string ConverterJSON::main_project_version {PROJECT_VERSION};
+const std::string ConverterJSON::project_name{PROJECT_NAME};
 
 
 ConverterJSON::ConverterJSON(const std::string config_directory,
@@ -23,9 +23,8 @@ ConverterJSON::ConverterJSON(const std::string config_directory,
 
 bool ConverterJSON::reading_config()
 {
-
-    try {
-
+    try
+    {
         nlohmann::json files_array;
         {
             nlohmann::json json_data = reading_json(config_directory);
@@ -33,23 +32,24 @@ bool ConverterJSON::reading_config()
             {
                 return false;
             }
-
             if (!json_data.contains("files")  )
             {
                 throw std::runtime_error("files is empty");
             }
-            nlohmann::json files_array = json_data["files"];
+            files_array = json_data["files"];
         }
         size_t size = files_array.size();
-
-        if(size < 1)
-        {return false;}
+        std::cout << "size " << size << "\n";
+         if(size < 1)
+             {return false;}
 
         files.reserve(size);
         for (auto &file: files_array)
         {
+            std::cout << "file " << file << "\n";
             files.push_back(file);
         }
+        return true;
     }
     catch (const std::exception& e) {
         std::cerr << "error: " << e.what() << '\n';
@@ -58,7 +58,7 @@ bool ConverterJSON::reading_config()
     catch (...) {
         return false;
     }
-    return true;
+
 }
 
 bool ConverterJSON::control_config(const nlohmann::json &json_data, const std::string &version, const std::string &project_name)

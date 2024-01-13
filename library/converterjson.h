@@ -20,7 +20,9 @@ public:
     std::string config_directory;
     std::string requests_directory;
     std::string answers_directory;
-
+    static const std::string main_project_version;
+    static const std::string project_name;
 };
+
 
 #endif // CONVERTERJSON_H
