@@ -11,7 +11,7 @@ public:
         const std::string requests_directory ="requests.json",
         const std::string answers_directory = "answers.json");
 
-    static nlohmann::json reading_json(const std::string &directory_file);
+    static nlohmann::json reading_json(const std::string &directory_file,const size_t max_file_size = 105000000); // примрено 100 MB
     bool reading_config();
 
     static bool control_config(const nlohmann::json &json_data,const std::string &version, const std::string &project_name);

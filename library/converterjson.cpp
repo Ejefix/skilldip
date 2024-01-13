@@ -4,6 +4,7 @@
 #include <vector>
 #include <thread>
 #include "version_main.h"
+#include <filesystem>
 
 // количество ядер
 static const unsigned int num_threads = std::thread::hardware_concurrency();
@@ -39,14 +40,14 @@ bool ConverterJSON::reading_config()
             files_array = json_data["files"];
         }
         size_t size = files_array.size();
-        std::cout << "size " << size << "\n";
+        std::cout << "size files " << size << "\n";
          if(size < 1)
              {return false;}
 
         files.reserve(size);
         for (auto &file: files_array)
         {
-            std::cout << "file " << file << "\n";
+            //std::cout << "file " << file << "\n";
             files.push_back(file);
         }
         return true;
@@ -65,6 +66,7 @@ bool ConverterJSON::control_config(const nlohmann::json &json_data, const std::s
 {
 
         try {
+
             if (!json_data.contains("config") && !json_data["config"].contains("name") )
             {
                 throw std::runtime_error("config file is empty");
@@ -93,17 +95,23 @@ bool ConverterJSON::control_config(const nlohmann::json &json_data, const std::s
 
 }
 
-nlohmann::json ConverterJSON::reading_json(const std::string &directory_file)
+nlohmann::json ConverterJSON::reading_json(const std::string &directory_file,size_t max_file_size)
 {
-    nlohmann::json json_data;
-    std::ifstream input_file(directory_file);
-    if (!input_file.is_open()) {
-        throw std::runtime_error("File is missing: " + directory_file);
-    } else {
-        input_file >> json_data;
-        input_file.close();
-    }
-    return json_data;
+
+        if (size_t size_file = std::filesystem::file_size(directory_file);max_file_size < size_file )
+        {
+            throw std::runtime_error("File size > 100 MB: " + directory_file);
+        }
+
+        nlohmann::json json_data;
+        std::ifstream input_file(directory_file);
+        if (!input_file.is_open()) {
+            throw std::runtime_error("File is missing: " + directory_file);
+        } else {
+            input_file >> json_data;
+            input_file.close();
+        }
+        return json_data;
 }
 
 
