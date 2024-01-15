@@ -7,7 +7,7 @@
 class ConverterJSON
 {
 public:
-    ConverterJSON(
+    ConverterJSON(const int numReadThreads,
         const std::string config_directory = "config.json",
         const std::string requests_directory = "requests.json",
         const std::string answers_directory = "answers.json");
@@ -28,10 +28,10 @@ public:
 private:
     nlohmann::json config_files_list;
     static bool control_config(const nlohmann::json &json_data,const std::string &version, const std::string &project_name);
-    static void set_buffer(std::vector<std::string> &buffer,const size_t &size_file, const int numReadThreads);
+    static void set_buffer(std::vector<std::string> &buffer,const size_t &size_file);
     static void reading(const std::string directory_file ,char *buffer,int start,int stop);
     nlohmann::json parse_buffer(const std::vector<std::string> &buffer) const;
-    int numReadThreads{1};
+    int numReadThreads{};
     static const unsigned int num_threads;
 
 
