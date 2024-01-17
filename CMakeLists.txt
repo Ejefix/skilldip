@@ -24,3 +24,5 @@ target_include_directories(Diplom PRIVATE ${CMAKE_BINARY_DIR})
 
 install(TARGETS Diplom DESTINATION bin)
 file(COPY config.json DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY requests.json DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY txtfile DESTINATION ${CMAKE_BINARY_DIR})

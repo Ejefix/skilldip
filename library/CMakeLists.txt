@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(LibDiplom
     converterjson.cpp
     converterjson.h
+    searchserver.h searchserver.cpp
 )
 
 
