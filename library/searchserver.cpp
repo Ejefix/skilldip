@@ -1,7 +1,8 @@
 #include "searchserver.h"
+#include "nlohmann/json.hpp"
+#include <memory>
 
-
-SearchServer::SearchServer(const std::shared_ptr<nlohmann::json> config_files_list, const std::shared_ptr<nlohmann::json> requests_list)
+SearchServer::SearchServer(const int maxThreads):Skeleton{maxThreads}
 {
 
 }

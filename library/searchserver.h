@@ -1,20 +1,16 @@
 #ifndef SEARCHSERVER_H
 #define SEARCHSERVER_H
-#include "nlohmann/json_fwd.hpp"
+#include "converterjson.h"
 
-class SearchServer
+class SearchServer: public Skeleton
 {
 public:
-    SearchServer(const std::shared_ptr<nlohmann::json> config_files_list,
-                 const std::shared_ptr<nlohmann::json> requests_list);
+    SearchServer(const int maxThreads);
+    ~SearchServer(){}
 
 
+private:
 
-
-    //результат чтения config.json
-    std::shared_ptr<nlohmann::json> config_files_list;
-    //результат чтения requests.json
-    std::shared_ptr<nlohmann::json> requests_list;
 
 };
 

@@ -12,27 +12,39 @@
 
 std::mutex mutex_cerr;
 
-// количество ядер
-const unsigned int Skeleton::num_threads = std::thread::hardware_concurrency();
+
 const std::string Skeleton::main_project_version {PROJECT_VERSION};
 const std::string Skeleton::project_name{PROJECT_NAME};
-int Skeleton::maxThreads;
 
 
+std::shared_ptr<nlohmann::json> ConverterJSON::config_files_list{std::make_shared<nlohmann::json>()};
+std::shared_ptr<nlohmann::json> ConverterJSON::requests_list{std::make_shared<nlohmann::json>()};
 
-Skeleton::Skeleton(const int maxThreads):
-    config_files_list{std::make_shared<nlohmann::json>()},
-    requests_list{std::make_shared<nlohmann::json>()}
+Skeleton::Skeleton(const int maxThreads)
 {
-    Skeleton::maxThreads = maxThreads;
+    this->maxThreads = maxThreads;
     max_sizeMB = 300;
-    if (maxThreads < 1 || maxThreads > Skeleton::num_threads)
-        Skeleton::maxThreads = Skeleton::num_threads;
 }
 
 Skeleton::~Skeleton()
 {
 
+}
+
+size_t Skeleton::get_data_file_sec(const std::string &directory_file)
+{
+    if (!std::filesystem::exists(directory_file)) {
+        throw std::runtime_error("File is missing: " + directory_file);
+    }
+    // Получаем время последнего изменения файла
+    auto ftime = std::filesystem::last_write_time(directory_file);
+
+    // Преобразуем время в тип duration, представляющий количество секунд
+    auto duration = ftime.time_since_epoch();
+
+    // Преобразуем duration в секунды
+    size_t last_modified_time = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
+    return last_modified_time;
 }
 
 void Skeleton::set_max_size_PerThread(float max_sizeMB)
@@ -84,7 +96,6 @@ std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &
                         readFileToBuffer(directory_file, &((*buffer)[i][0]), buffer->at(0).size() * i, buffer->at(i).size());
                     }
                     catch (const std::exception& e) {
-
                         if (!errorOccurred)
                         {
                             errorOccurred = true;
@@ -111,17 +122,55 @@ std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &
     return buffer;
 }
 
+void Skeleton::set_buffer(std::vector<std::string > &buffer,const size_t size_file)const
+{
 
+    // тут нету смысла использовать все потоки, мы не сможем преодолеть ограничеия диска
+    // по сути вообще на малые файлы нету смысла делать потоки
+    // если счёт пойдет на Gb тогда можно открыть еще потоки
+    int numReadThreads = 1;
 
+    if (size_file / 300*1024*1024 > 1) // if > 300 Mb
+    {
+        numReadThreads = size_file / max_sizeMB*1024*1024;
 
+        if (numReadThreads > maxThreads )
+            numReadThreads =  maxThreads;
+    }
 
+    size_t resize_string = size_file / numReadThreads;
+    size_t remainder = size_file % numReadThreads;
+
+    for (int i {}; i < numReadThreads - 1 ;++i)
+    {
+        std::string j;
+        j.resize(resize_string);
+        buffer.push_back(j);
+    }
+    std::string j;
+    j.resize(resize_string + remainder);
+    buffer.push_back(j);
+}
+
+void Skeleton::readFileToBuffer(const std::string &directory_file, char *buffer, int start, int stop)const
+{
+    std::ifstream input_file(directory_file, std::ios::binary);
+    if (!input_file.is_open()) {
+        throw std::runtime_error("File is missing: " + directory_file);
+    } else
+    {
+        input_file.seekg(start, std::ios::beg); // перемещаем на позицию
+        input_file.read(buffer, stop);
+    }
+}
+
+//===================================================================================================================
 
 ConverterJSON::ConverterJSON(const int maxThreads)
     :Skeleton{maxThreads}
 {
-
+    update_lists();
 }
-
 
 bool ConverterJSON::reading_config()
 {
@@ -187,37 +236,6 @@ bool ConverterJSON::control_config(const nlohmann::json &json_data, const std::s
 
 }
 
-
-void Skeleton::set_buffer(std::vector<std::string > &buffer,const size_t size_file)const
-{
-
-    // тут нету смысла использовать все потоки, мы не сможем преодолеть ограничеия диска
-    // по сути вообще на малые файлы нету смысла делать потоки
-    // если счёт пойдет на Gb тогда можно открыть еще потоки
-    int numReadThreads = 1;
-
-    if (size_file / 300*1024*1024 > 1) // if > 300 Mb
-    {
-        numReadThreads = size_file / max_sizeMB*1024*1024;
-
-        if (numReadThreads > maxThreads )
-            numReadThreads =  maxThreads;
-    }
-
-    size_t resize_string = size_file / numReadThreads;
-    size_t remainder = size_file % numReadThreads;
-
-    for (int i {}; i < numReadThreads - 1 ;++i)
-    {
-        std::string j;
-        j.resize(resize_string);
-        buffer.push_back(j);
-    }
-    std::string j;
-    j.resize(resize_string + remainder);
-    buffer.push_back(j);
-}
-
 nlohmann::json ConverterJSON::reading_json(const std::string &directory_file,const size_t max_file_size)const
 {
     const size_t size_file = std::filesystem::file_size(directory_file);
@@ -233,6 +251,7 @@ nlohmann::json ConverterJSON::reading_json(const std::string &directory_file,con
 
 std::shared_ptr<nlohmann::json> ConverterJSON::get_list_files_config(const int str_size,const bool filter)
 {
+
     try {
 
         if (time_reading_config < get_data_file_sec(config_directory) && reading_config())
@@ -243,7 +262,7 @@ std::shared_ptr<nlohmann::json> ConverterJSON::get_list_files_config(const int s
         }
         else{
             if(filter)
-                filter_files(config_files_list,str_size);
+                filter_files(config_files_list,str_size);          
             return config_files_list;
         }
     }
@@ -265,7 +284,7 @@ std::shared_ptr<nlohmann::json> ConverterJSON::get_list_files_requests(const int
             nlohmann::json list = reading_json(requests_directory);
             *requests_list = list["requests"];
             if(filter)
-                filter_files(requests_list,str_size);
+                filter_files(requests_list,str_size);          
             return requests_list;
         }
         else{
@@ -292,37 +311,14 @@ std::shared_ptr<nlohmann::json> ConverterJSON::get_list_files_config(const bool 
 
 std::shared_ptr<nlohmann::json> ConverterJSON::get_list_files_requests(const bool filter)
 {
-                        // 1 млн
+    // 1 млн
     return get_list_files_requests(1000000,filter);
 }
 
-size_t ConverterJSON::get_data_file_sec(const std::string &directory_file)
+void ConverterJSON::update_lists()
 {
-    if (!std::filesystem::exists(directory_file)) {
-        throw std::runtime_error("File is missing: " + directory_file);
-    }
-    // Получаем время последнего изменения файла
-    auto ftime = std::filesystem::last_write_time(directory_file);
-
-    // Преобразуем время в тип duration, представляющий количество секунд
-    auto duration = ftime.time_since_epoch();
-
-    // Преобразуем duration в секунды
-    size_t last_modified_time = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
-    return last_modified_time;
-}
-
-
-void Skeleton::readFileToBuffer(const std::string &directory_file, char *buffer, int start, int stop)const
-{
-    std::ifstream input_file(directory_file, std::ios::binary);
-    if (!input_file.is_open()) {
-        throw std::runtime_error("File is missing: " + directory_file);
-    } else
-    {
-        input_file.seekg(start, std::ios::beg); // перемещаем на позицию
-        input_file.read(buffer, stop);
-    }
+    ConverterJSON::config_files_list = get_list_files_config(str_size_config,filter_config);
+    ConverterJSON::requests_list = get_list_files_requests(str_size_requests,filter_requests);
 }
 
 void ConverterJSON::filter_files(std::shared_ptr<nlohmann::json> filter_list, const int str_size)
@@ -331,7 +327,7 @@ void ConverterJSON::filter_files(std::shared_ptr<nlohmann::json> filter_list, co
     {
         if (!it->is_string() || it->get<std::string>().size() > str_size )
         {
-           // std::cout << it->get<std::string>();
+            // std::cout << it->get<std::string>();
             it = filter_list->erase(it);
         }
         else
@@ -343,10 +339,10 @@ void ConverterJSON::filter_files(std::shared_ptr<nlohmann::json> filter_list, co
 
 nlohmann::json ConverterJSON::parse_buffer(std::vector<std::string> &buffer)const
 {
+    std::string json_string;
     try {
 
         nlohmann::json obj_array;
-        std::string json_string;
         size_t res{};
         for (const std::string& str : buffer)
             res += str.size();
@@ -356,12 +352,18 @@ nlohmann::json ConverterJSON::parse_buffer(std::vector<std::string> &buffer)cons
 
             json_string += buffer[i];
             buffer[i].clear();
-           // std::cout << "buffer[i].clear(); " << buffer[i].size();
+            // std::cout << "buffer[i].clear(); " << buffer[i].size();
         }
         obj_array = nlohmann::json::parse(json_string);
+        buffer.clear();
         return obj_array;
     } catch (const nlohmann::json::parse_error& e) {
         std::cerr << "JSON parsing error: \n" << e.what() << '\n';
+        buffer.clear();
+    }
+    catch (...) {
+        std::cerr << "JSON parsing error: \n" << '\n';
+        buffer.clear();
     }
     return nlohmann::json{};
 }

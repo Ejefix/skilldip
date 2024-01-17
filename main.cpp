@@ -1,26 +1,31 @@
 #include <converterjson.h>
 #include <iostream>
-//#include <memory>
-//#include <nlohmann/json.hpp>
+#include <memory>
+#include <nlohmann/json.hpp>
+#include <thread>
 
+// количество ядер
+const unsigned int num_threads{ std::thread::hardware_concurrency()};
 void start(ConverterJSON &x)
 {
-    std::shared_ptr<nlohmann::json> config_files_list{x.get_list_files_config()};
 
-   // std::cout << config_files_list->dump(4) << std::endl;
-
-    std::shared_ptr<nlohmann::json>  list{x.get_list_files_requests()};
 }
 
 
 int main(int argc, char *argv[])
 {
+    int maxThreads = num_threads; // Значение по умолчанию
+
+
     try {
-        int numReadThreads = 1; // Значение по умолчанию
+
         if (argc > 1) {
-            numReadThreads = std::atoi(argv[1]); // Преобразуем аргумент командной строки в число
+            maxThreads = std::atoi(argv[1]); // Преобразуем аргумент командной строки в число
+            if (maxThreads < 1 || maxThreads > num_threads)
+                maxThreads = num_threads;
         }
-        ConverterJSON x{numReadThreads};
+
+        ConverterJSON x{maxThreads};
         start(x);
         return 0;
     } catch (...) {
