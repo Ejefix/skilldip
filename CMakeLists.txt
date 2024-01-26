@@ -23,6 +23,11 @@ target_include_directories(Diplom PRIVATE ${CMAKE_BINARY_DIR})
 
 
 install(TARGETS Diplom DESTINATION bin)
+
+install(FILES ${CMAKE_SOURCE_DIR}/config.json DESTINATION bin)
+install(FILES ${CMAKE_SOURCE_DIR}/requests.json DESTINATION bin)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/txtfile/ DESTINATION bin/txtfile)
+
 file(COPY config.json DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY requests.json DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY txtfile DESTINATION ${CMAKE_BINARY_DIR})
