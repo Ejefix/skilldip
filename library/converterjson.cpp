@@ -2,28 +2,27 @@
 #include <fstream>
 #include <iostream>
 #include <array>
-#include <thread>
-#include <chrono>
 #include "version_main.h"
 #include <filesystem>
-#include <mutex>
 #include <cstdlib>
-#include "nlohmann/json.hpp"
 
+
+namespace THReads {
 std::mutex mutex_cerr;
+std::mutex insert_lock;
+}
 
 
 const std::string Skeleton::main_project_version {PROJECT_VERSION};
 const std::string Skeleton::project_name{PROJECT_NAME};
 
 
-std::shared_ptr<nlohmann::json> ConverterJSON::config_files_list{std::make_shared<nlohmann::json>()};
-std::shared_ptr<nlohmann::json> ConverterJSON::requests_list{std::make_shared<nlohmann::json>()};
-
-Skeleton::Skeleton(const int maxThreads)
+Skeleton::Skeleton(int maxThreads)
 {
     this->maxThreads = maxThreads;
     max_sizeMB = 300;
+    if (maxThreads < 1 || maxThreads > THReads::num_threads)
+        this->maxThreads = THReads::num_threads;
 }
 
 Skeleton::~Skeleton()
@@ -47,6 +46,11 @@ size_t Skeleton::get_data_file_sec(const std::string &directory_file)
     return last_modified_time;
 }
 
+size_t Skeleton::get_file_size(const std::string &directory_file)
+{
+    return std::filesystem::file_size(directory_file);
+}
+
 void Skeleton::set_max_size_PerThread(float max_sizeMB)
 {
     if (max_sizeMB < 0)
@@ -54,26 +58,31 @@ void Skeleton::set_max_size_PerThread(float max_sizeMB)
     this->max_sizeMB = max_sizeMB;
 }
 
-std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &directory_file, const size_t size_file)const
+std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &directory_file)const
 {
-    std::shared_ptr<std::vector<std::string>> buffer = std::make_shared<std::vector<std::string>>();
+    try {
+    size_t size_file = get_file_size(directory_file);
+    const auto buffer = std::make_shared<std::vector<std::string>>();
+
     set_buffer(*buffer, size_file);
 
     std::vector<std::thread> threads;
 
+    size_t size = buffer->size();
     bool errorOccurred = false;
 
-    for (int i{};i < buffer->size();++i)
+    for (int i{};i < size;++i)
     {
-        if (i == buffer->size()-1)
+        if (i == size-1)
         {   try {
+                //std::cerr << " readFileToBuffer \n";
                 readFileToBuffer(directory_file, &((*buffer)[i][0]), buffer->at(0).size() * i, buffer->at(i).size());
             }
             catch (const std::exception& e) {
                 if (!errorOccurred)
                 {
                     errorOccurred = true;
-                    std::lock_guard<std::mutex> lock(mutex_cerr);
+                    std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
                     std::cerr << "error: " << e.what() << '\n';
                 }
                 buffer->at(i).clear();
@@ -83,7 +92,7 @@ std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &
                 if (!errorOccurred)
                 {
                     errorOccurred = true;
-                    std::lock_guard<std::mutex> lock(mutex_cerr);
+                    std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
                     std::cerr << "error "  << '\n';
                 }
                 buffer->at(i).clear();
@@ -99,7 +108,7 @@ std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &
                         if (!errorOccurred)
                         {
                             errorOccurred = true;
-                            std::lock_guard<std::mutex> lock(mutex_cerr);
+                            std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
                             std::cerr << "error: " << e.what() << '\n';
                         }
                         buffer->at(i).clear();
@@ -109,7 +118,7 @@ std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &
                         if (!errorOccurred)
                         {
                             errorOccurred = true;
-                            std::lock_guard<std::mutex> lock(mutex_cerr);
+                            std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
                             std::cerr << "error "  << '\n';
                         }
                         buffer->at(i).clear();
@@ -120,6 +129,11 @@ std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &
         thread.join();
     }
     return buffer;
+    }
+    catch (...) {
+    std::cerr << "file " << directory_file << " is missing \n";
+    }
+    return std::make_shared<std::vector<std::string>>();
 }
 
 void Skeleton::set_buffer(std::vector<std::string > &buffer,const size_t size_file)const
@@ -128,16 +142,18 @@ void Skeleton::set_buffer(std::vector<std::string > &buffer,const size_t size_fi
     // тут нету смысла использовать все потоки, мы не сможем преодолеть ограничеия диска
     // по сути вообще на малые файлы нету смысла делать потоки
     // если счёт пойдет на Gb тогда можно открыть еще потоки
-    int numReadThreads = 1;
+    size_t numReadThreads = 1;
 
-    if (size_file / 300*1024*1024 > 1) // if > 300 Mb
-    {
-        numReadThreads = size_file / max_sizeMB*1024*1024;
+    numReadThreads = static_cast<size_t>(size_file / (max_sizeMB*1024*1024));
+   // std::cerr << numReadThreads << " numReadThreads \n";
 
-        if (numReadThreads > maxThreads )
-            numReadThreads =  maxThreads;
+    if (numReadThreads > maxThreads )
+    numReadThreads =  maxThreads;
+    if (numReadThreads < 1) {
+    numReadThreads = 1;
     }
 
+   // std::cerr << numReadThreads << " set_buffer \n";
     size_t resize_string = size_file / numReadThreads;
     size_t remainder = size_file % numReadThreads;
 
@@ -154,11 +170,14 @@ void Skeleton::set_buffer(std::vector<std::string > &buffer,const size_t size_fi
 
 void Skeleton::readFileToBuffer(const std::string &directory_file, char *buffer, int start, int stop)const
 {
+
     std::ifstream input_file(directory_file, std::ios::binary);
+
     if (!input_file.is_open()) {
         throw std::runtime_error("File is missing: " + directory_file);
     } else
     {
+
         input_file.seekg(start, std::ios::beg); // перемещаем на позицию
         input_file.read(buffer, stop);
     }
@@ -166,8 +185,8 @@ void Skeleton::readFileToBuffer(const std::string &directory_file, char *buffer,
 
 //===================================================================================================================
 
-ConverterJSON::ConverterJSON(const int maxThreads)
-    :Skeleton{maxThreads}
+ConverterJSON::ConverterJSON(int maxThreads)
+    :Skeleton{maxThreads},config_files_list{std::make_shared<nlohmann::json>()},requests_list{std::make_shared<nlohmann::json>()}
 {
     update_lists();
 }
@@ -238,45 +257,39 @@ bool ConverterJSON::control_config(const nlohmann::json &json_data, const std::s
 
 nlohmann::json ConverterJSON::reading_json(const std::string &directory_file,const size_t max_file_size)const
 {
-    const size_t size_file = std::filesystem::file_size(directory_file);
-
+    const size_t size_file = get_file_size(directory_file);
     if (max_file_size < size_file )
     {
         throw std::runtime_error("File size > " + std::to_string(size_file / 1024 / 1024) + " MB in " + directory_file);
     }
-    std::shared_ptr<std::vector<std::string>> buffer = std::make_shared<std::vector<std::string>>();
-    buffer = readFile(directory_file,size_file);
+    auto buffer = std::make_shared<std::vector<std::string>>();
+    buffer = readFile(directory_file);
     return parse_buffer(*buffer);
 }
 
-std::shared_ptr<nlohmann::json> ConverterJSON::get_list_files_config(const int str_size,const bool filter)
+void ConverterJSON::get_list_files_config(int str_size,bool filter)
 {
-
     try {
 
         if (time_reading_config < get_data_file_sec(config_directory) && reading_config())
         {
             if(filter)
                 filter_files(config_files_list,str_size);
-            return config_files_list;
         }
         else{
             if(filter)
-                filter_files(config_files_list,str_size);          
-            return config_files_list;
+                filter_files(config_files_list,str_size);                    
         }
     }
     catch (const std::exception& e) {
 
         std::cerr << "error: " << e.what() << '\n';
-        return std::make_shared<nlohmann::json>();
+
     }
-    catch (...) {
-        return std::make_shared<nlohmann::json>();
-    }
+    catch (...) {}
 }
 
-std::shared_ptr<nlohmann::json> ConverterJSON::get_list_files_requests(const int str_size,const bool filter)
+void ConverterJSON::get_list_files_requests(int str_size,bool filter)
 {
     try {
         if (time_reading_requests < get_data_file_sec(requests_directory) )
@@ -285,43 +298,66 @@ std::shared_ptr<nlohmann::json> ConverterJSON::get_list_files_requests(const int
             *requests_list = list["requests"];
             if(filter)
                 filter_files(requests_list,str_size);          
-            return requests_list;
+
         }
         else{
             if(filter)
-                filter_files(requests_list,str_size);
-            return requests_list;
+                filter_files(requests_list,str_size);           
         }
     }
     catch (const std::exception& e) {
         std::cerr << "error: " << e.what() << '\n';
-        return std::make_shared<nlohmann::json>();
+
     }
-    catch (...) {
-        return std::make_shared<nlohmann::json>();
-    }
+    catch (...) {}
 }
 
-std::shared_ptr<nlohmann::json> ConverterJSON::get_list_files_config(const bool filter)
-{
-    //вроде в windows сейчас максимум 32000 символов
-    return get_list_files_config(40000, filter);
 
-}
-
-std::shared_ptr<nlohmann::json> ConverterJSON::get_list_files_requests(const bool filter)
-{
-    // 1 млн
-    return get_list_files_requests(1000000,filter);
-}
 
 void ConverterJSON::update_lists()
 {
-    ConverterJSON::config_files_list = get_list_files_config(str_size_config,filter_config);
-    ConverterJSON::requests_list = get_list_files_requests(str_size_requests,filter_requests);
+
+    get_list_files_config(str_size_config,filter_config);
+    get_list_files_requests(str_size_requests,filter_requests);
 }
 
-void ConverterJSON::filter_files(std::shared_ptr<nlohmann::json> filter_list, const int str_size)
+void ConverterJSON::set_filter_configJSON(int str_size, bool filter)
+{
+    if (str_size > 5)
+    str_size_config = str_size;
+    filter_config = filter;
+    settingsChanged = true;
+}
+
+void ConverterJSON::set_filter_configJSON(int str_size)
+{
+    set_filter_configJSON(str_size,filter_config);
+}
+
+void ConverterJSON::set_filter_configJSON(bool filter)
+{
+    set_filter_configJSON(str_size_config,filter);
+}
+
+void ConverterJSON::set_filter_requestsJSON(int str_size,bool filter)
+{
+    if (str_size > 5)
+    str_size_requests = str_size;
+    filter_requests = filter;
+    settingsChanged = true;
+}
+
+void ConverterJSON::set_filter_requestsJSON(int str_size)
+{
+    set_filter_requestsJSON(str_size,filter_requests);
+}
+
+void ConverterJSON::set_filter_requestsJSON(bool filter)
+{
+    set_filter_requestsJSON(str_size_requests,filter);
+}
+
+void ConverterJSON::filter_files(std::shared_ptr<nlohmann::json> filter_list,int str_size)
 {
     for (auto it = filter_list->begin(); it != filter_list->end(); )
     {
