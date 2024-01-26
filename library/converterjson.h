@@ -23,18 +23,14 @@ public:
     void set_max_size_PerThread(float max_sizeMB);
 protected:
 
-
-
     // функция читает файл бинарно и заполняет std::vector buffer от [0]->[1]->[2]->...
     std::shared_ptr<std::vector<std::string>> readFile(const std::string &directory_file)const;
     int maxThreads;
     float max_sizeMB;
 private:
 
-
     // может включить дополнительные потоки для чтения
     void set_buffer(std::vector<std::string> &buffer,const size_t size_file)const ;
-
     void readFileToBuffer(const std::string &directory_file ,char *buffer,int start,int stop)const;
 };
 
@@ -47,7 +43,7 @@ public:
 
     nlohmann::json reading_json(const std::string &directory_file,const size_t max_file_size = 105000000)const  ; // примрено 100 MB
 
-    void update_lists();
+    void update();
 
     void set_filter_configJSON(int str_size ,bool filter);
     void set_filter_configJSON(int str_size );
@@ -57,9 +53,9 @@ public:
     void set_filter_requestsJSON(bool filter);
 
 
-    std::string config_directory = "config.json";
-    std::string requests_directory = "requests.json";
-    std::string answers_directory = "answers.json";
+    std::string config_directory = "./config.json";
+    std::string requests_directory = "./requests.json";
+    std::string answers_directory = "./answers.json";
 
     //результат чтения config.json
 const     std::shared_ptr<nlohmann::json> config_files_list;
@@ -90,8 +86,6 @@ private:
 
     void get_list_files_config(int str_size , const bool filter);
     void get_list_files_requests(int str_size, const bool filter);
-
-
 };
 
 #endif // CONVERTERJSON_H

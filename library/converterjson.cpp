@@ -188,7 +188,7 @@ void Skeleton::readFileToBuffer(const std::string &directory_file, char *buffer,
 ConverterJSON::ConverterJSON(int maxThreads)
     :Skeleton{maxThreads},config_files_list{std::make_shared<nlohmann::json>()},requests_list{std::make_shared<nlohmann::json>()}
 {
-    update_lists();
+    update();
 }
 
 bool ConverterJSON::reading_config()
@@ -314,7 +314,7 @@ void ConverterJSON::get_list_files_requests(int str_size,bool filter)
 
 
 
-void ConverterJSON::update_lists()
+void ConverterJSON::update()
 {
 
     get_list_files_config(str_size_config,filter_config);

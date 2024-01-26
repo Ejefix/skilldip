@@ -2,6 +2,7 @@
 #define SEARCHSERVER_H
 #include "converterjson.h"
 #include <unordered_map>
+#include "relativeindex.h"
 
 class SearchServer: public Skeleton
 {
@@ -11,8 +12,9 @@ public:
                  const std::shared_ptr<const nlohmann::json>& requests_list);
     ~SearchServer(){}
 
-
+    std::shared_ptr<std::vector<RelativeIndex>> get_RelativeIndex();
 private:
+    std::shared_ptr<std::vector<RelativeIndex>> relativeIndex;
     size_t SearchServerThreads;
 
     /* потоко безопастно, очистка буффера,
@@ -38,7 +40,7 @@ private:
 
     //вернет результат с таким же индексом соответствующим config_files_list
     std::shared_ptr<std::vector<std::map<size_t, size_t>>> get_result_files(const std::shared_ptr<const nlohmann::json> &config_files_list);
-
+    std::shared_ptr<std::map<size_t, size_t>> get_result_requests(const std::shared_ptr<const nlohmann::json> &requests_list) ;
     class Dictionary : public ConverterJSON
     {
     public:

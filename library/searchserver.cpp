@@ -8,20 +8,12 @@
 
 
 
-//    {// убить buffer
-//        auto buffer = std::make_shared<std::vector<std::string>>();
-//        to_string(*buffer, requests_list);
-//        requests = parse_buffer(buffer);
-//    }// убит buffer
-
-
-// ok теперь мы знаем где искать и что искать!
-// заливаем где ищем
 
 SearchServer::SearchServer(int maxThreads,
                            const std::shared_ptr<const nlohmann::json>& config_files_list,
                            const std::shared_ptr<const nlohmann::json>& requests_list)
-    :Skeleton{1},config_files_list{config_files_list},requests_list{requests_list}
+    :Skeleton{1},config_files_list{config_files_list},requests_list{requests_list},
+    relativeIndex{std::make_shared<std::vector<RelativeIndex>>()}
 {
     //установка потоков
     SearchServerThreads = maxThreads;
@@ -33,15 +25,48 @@ SearchServer::SearchServer(int maxThreads,
         std::filesystem::create_directories("./work");
         //std::cout << "./work создана\n";
     }
-    get_result_files(config_files_list);
+    //get_result_files(config_files_list);
+   // get_result_requests(requests_list);
+
+}
+
+std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
+{
+
+    auto result_files = get_result_files(config_files_list);
+    size_t i{};
+    auto result_requests = get_result_requests(requests_list);
+    for(auto &result : *result_files)
+    {
+        auto it = config_files_list->begin()+i;
+        const std::string directory_file = it->dump();
+        std::vector<std::pair<std::string,size_t>> result_vec;
+       // std::cout << "file : "<< directory_file << "\n";
+
+        for(auto &result_ : *result_requests)
+        {
+            std::pair<std::string,size_t> res;
+            res.first = dictionary.at(result_.first);
+            res.second = result[result_.first] ;
+            if(res.second > 0 )
+            {
+                result_vec.push_back(res);
+            }
+        }
+        if(!result_vec.empty() )
+        {
+            RelativeIndex ind{directory_file,result_vec};
+            relativeIndex->push_back(ind);
+        }
+        ++i;
+    }
+    return relativeIndex;
 }
 
 std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_files(const std::shared_ptr<const nlohmann::json> &config_files_list)
 {
     // Начало измерения времени
-    auto start = std::chrono::high_resolution_clock::now();
-
-    std::map<size_t, size_t> requests;
+    //auto start = std::chrono::high_resolution_clock::now();
     std::vector<std::string> files_list;
 
 
@@ -152,11 +177,22 @@ std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_
     for (auto& thread : threads) {
         thread.join();
     }
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> duration = end - start;
-    std::cout << "Время выполнения: " << duration.count() << " мс" << std::endl;
+//    auto end = std::chrono::high_resolution_clock::now();
+//    std::chrono::duration<double, std::milli> duration = end - start;
+//    std::cout << "Время выполнения: " << duration.count() << " мс" << std::endl;
 
     return rezult;
+}
+
+std::shared_ptr<std::map<size_t, size_t> > SearchServer::get_result_requests(const std::shared_ptr<const nlohmann::json> &requests_list)
+{
+    auto requests = std::make_shared<std::map<size_t, size_t> >();
+
+    auto buffer = std::make_shared<std::vector<std::string>>();
+    to_string(*buffer, requests_list);
+    *requests = parse_buffer(buffer);
+    return requests;
+
 }
 
 size_t SearchServer::get_id(const std::string &word,std::vector<std::pair<std::string,size_t>> &miniBuffer)
@@ -175,7 +211,6 @@ size_t SearchServer::get_id(const std::string &word,std::vector<std::pair<std::s
     }
     //если в словаре нету, то добавится
     dictionary.insert(word); // потоко безопастно
-
     size_t id = dictionary.at(word);
 
     if (size >= 100)

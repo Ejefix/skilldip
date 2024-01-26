@@ -11,6 +11,7 @@ add_library(LibDiplom
     converterjson.cpp
     converterjson.h
     searchserver.h searchserver.cpp
+    relativeindex.h relativeindex.cpp
 )
 
 
