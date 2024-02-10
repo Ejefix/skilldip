@@ -1,7 +1,7 @@
 #ifndef SEARCHSERVER_H
 #define SEARCHSERVER_H
 #include "converterjson.h"
-#include <unordered_map>
+#include <map>
 #include "relativeindex.h"
 
 class SearchServer: public Skeleton
@@ -10,9 +10,15 @@ public:
     SearchServer(int maxThreads,
                  const std::shared_ptr<const nlohmann::json>& config_files_list,
                  const std::shared_ptr<const nlohmann::json>& requests_list);
-    ~SearchServer(){}
 
+    virtual ~SearchServer(){};
     std::shared_ptr<std::vector<RelativeIndex>> get_RelativeIndex();
+protected:
+
+    // возможно захотим распарсить ссылки или есть другие требования
+    // а может хотите искать константное слово, учитывая регистр и другие факторы
+    // часть логики parse_buffer
+    virtual std::vector<std::string> transformation(std::string &word) const &;
 private:
     std::shared_ptr<std::vector<RelativeIndex>> relativeIndex;
     size_t SearchServerThreads;
@@ -23,7 +29,7 @@ private:
     std::map<size_t, size_t> parse_buffer(const std::shared_ptr<std::vector<std::string>> buffer);
 
     // потоко безопастно
-    size_t get_id(const std::string &word,std::vector<std::pair<std::string,size_t>> &miniBuffer);
+    size_t get_id(const std::string &word,std::map<std::string, size_t> &miniBuffer);
 
     bool saveToFile(const std::string &directory_file, const std::map<size_t, size_t> &map) const;
 

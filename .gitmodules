@@ -1,3 +1,6 @@
 [submodule "library/json"]
 	path = library/json
 	url = https://github.com/nlohmann/json
+[submodule "extern/googletest"]
+	path = extern/googletest
+	url = https://github.com/google/googletest.git

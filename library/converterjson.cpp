@@ -25,23 +25,14 @@ Skeleton::Skeleton(int maxThreads)
         this->maxThreads = THReads::num_threads;
 }
 
-Skeleton::~Skeleton()
-{
-
-}
 
 size_t Skeleton::get_data_file_sec(const std::string &directory_file)
 {
     if (!std::filesystem::exists(directory_file)) {
         throw std::runtime_error("File is missing: " + directory_file);
     }
-    // Получаем время последнего изменения файла
-    auto ftime = std::filesystem::last_write_time(directory_file);
-
-    // Преобразуем время в тип duration, представляющий количество секунд
-    auto duration = ftime.time_since_epoch();
-
-    // Преобразуем duration в секунды
+    auto ftime = std::filesystem::last_write_time(directory_file); 
+    auto duration = ftime.time_since_epoch(); 
     size_t last_modified_time = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
     return last_modified_time;
 }
@@ -75,7 +66,7 @@ std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &
     {
         if (i == size-1)
         {   try {
-                //std::cerr << " readFileToBuffer \n";
+
                 readFileToBuffer(directory_file, &((*buffer)[i][0]), buffer->at(0).size() * i, buffer->at(i).size());
             }
             catch (const std::exception& e) {
@@ -139,13 +130,10 @@ std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &
 void Skeleton::set_buffer(std::vector<std::string > &buffer,const size_t size_file)const
 {
 
-    // тут нету смысла использовать все потоки, мы не сможем преодолеть ограничеия диска
-    // по сути вообще на малые файлы нету смысла делать потоки
-    // если счёт пойдет на Gb тогда можно открыть еще потоки
     size_t numReadThreads = 1;
 
-    numReadThreads = static_cast<size_t>(size_file / (max_sizeMB*1024*1024));
-   // std::cerr << numReadThreads << " numReadThreads \n";
+    numReadThreads = size_file / (max_sizeMB*1024*1024);
+
 
     if (numReadThreads > maxThreads )
     numReadThreads =  maxThreads;
@@ -153,7 +141,7 @@ void Skeleton::set_buffer(std::vector<std::string > &buffer,const size_t size_fi
     numReadThreads = 1;
     }
 
-   // std::cerr << numReadThreads << " set_buffer \n";
+
     size_t resize_string = size_file / numReadThreads;
     size_t remainder = size_file % numReadThreads;
 
@@ -178,7 +166,7 @@ void Skeleton::readFileToBuffer(const std::string &directory_file, char *buffer,
     } else
     {
 
-        input_file.seekg(start, std::ios::beg); // перемещаем на позицию
+        input_file.seekg(start, std::ios::beg);
         input_file.read(buffer, stop);
     }
 }
@@ -188,7 +176,7 @@ void Skeleton::readFileToBuffer(const std::string &directory_file, char *buffer,
 ConverterJSON::ConverterJSON(int maxThreads)
     :Skeleton{maxThreads},config_files_list{std::make_shared<nlohmann::json>()},requests_list{std::make_shared<nlohmann::json>()}
 {
-    update();
+
 }
 
 bool ConverterJSON::reading_config()
@@ -327,6 +315,12 @@ void ConverterJSON::set_filter_configJSON(int str_size, bool filter)
     str_size_config = str_size;
     filter_config = filter;
     settingsChanged = true;
+
+}
+
+void ConverterJSON::set_filter_configJSON(bool filter, int str_size)
+{
+    set_filter_configJSON(str_size, filter);
 }
 
 void ConverterJSON::set_filter_configJSON(int str_size)
@@ -345,6 +339,12 @@ void ConverterJSON::set_filter_requestsJSON(int str_size,bool filter)
     str_size_requests = str_size;
     filter_requests = filter;
     settingsChanged = true;
+
+}
+
+void ConverterJSON::set_filter_requestsJSON(bool filter, int str_size)
+{
+    set_filter_requestsJSON(str_size,filter);
 }
 
 void ConverterJSON::set_filter_requestsJSON(int str_size)
@@ -363,7 +363,6 @@ void ConverterJSON::filter_files(std::shared_ptr<nlohmann::json> filter_list,int
     {
         if (!it->is_string() || it->get<std::string>().size() > str_size )
         {
-            // std::cout << it->get<std::string>();
             it = filter_list->erase(it);
         }
         else
@@ -388,7 +387,7 @@ nlohmann::json ConverterJSON::parse_buffer(std::vector<std::string> &buffer)cons
 
             json_string += buffer[i];
             buffer[i].clear();
-            // std::cout << "buffer[i].clear(); " << buffer[i].size();
+
         }
         obj_array = nlohmann::json::parse(json_string);
         buffer.clear();

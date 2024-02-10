@@ -14,7 +14,6 @@ class Skeleton
 public:
     // maxThreads оставлено на усмотрение разработчика
     Skeleton(int maxThreads );
-    virtual ~Skeleton();
     static size_t get_data_file_sec (const std::string &directory_file);
     static size_t get_file_size(const std::string &directory_file);
     static const std::string main_project_version;
@@ -46,9 +45,12 @@ public:
     void update();
 
     void set_filter_configJSON(int str_size ,bool filter);
+    void set_filter_configJSON(bool filter,int str_size );
     void set_filter_configJSON(int str_size );
     void set_filter_configJSON(bool filter);
+
     void set_filter_requestsJSON(int str_size , bool filter);
+    void set_filter_requestsJSON(bool filter , int str_size);
     void set_filter_requestsJSON(int str_size );
     void set_filter_requestsJSON(bool filter);
 
@@ -69,8 +71,8 @@ private:
 
     int str_size_config{300};
     int str_size_requests{1000};
-    bool filter_config{false};
-    bool filter_requests{false};
+    bool filter_config{true};
+    bool filter_requests{true};
     bool settingsChanged{false};
     int max_responses{};
     // контроль шапки

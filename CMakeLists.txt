@@ -4,8 +4,10 @@ project(Diplom LANGUAGES CXX VERSION 1.0.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FetchContent)
-FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
+FetchContent_Declare(json
+  URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
 FetchContent_MakeAvailable(json)
+
 
 add_subdirectory(./library)
 
@@ -25,8 +27,14 @@ install(TARGETS Diplom DESTINATION bin)
 
 install(FILES ${CMAKE_SOURCE_DIR}/config.json DESTINATION bin)
 install(FILES ${CMAKE_SOURCE_DIR}/requests.json DESTINATION bin)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/txtfile/ DESTINATION bin/txtfile)
-
 file(COPY config.json DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY requests.json DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY txtfile DESTINATION ${CMAKE_BINARY_DIR})
+
+
+option(BUILD_TESTS "Build the tests" ON)
+if(BUILD_TESTS)
+    add_executable(DiplomTests tests/test_main.cpp)
+    file(COPY tests/file DESTINATION ${CMAKE_BINARY_DIR}/tests)
+    target_link_libraries(DiplomTests PRIVATE LibDiplom nlohmann_json::nlohmann_json)
+    target_include_directories(DiplomTests PRIVATE ${CMAKE_BINARY_DIR})
+endif()

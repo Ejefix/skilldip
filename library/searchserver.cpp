@@ -7,8 +7,6 @@
 
 
 
-
-
 SearchServer::SearchServer(int maxThreads,
                            const std::shared_ptr<const nlohmann::json>& config_files_list,
                            const std::shared_ptr<const nlohmann::json>& requests_list)
@@ -23,25 +21,30 @@ SearchServer::SearchServer(int maxThreads,
     if(!std::filesystem::exists("./work"))
     {
         std::filesystem::create_directories("./work");
-        //std::cout << "./work создана\n";
-    }
-    //get_result_files(config_files_list);
-   // get_result_requests(requests_list);
 
+    }
 }
 
 std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
 {
-
+    if(config_files_list->empty() || config_files_list->empty())
+    {
+        return nullptr;
+    }
     auto result_files = get_result_files(config_files_list);
     size_t i{};
     auto result_requests = get_result_requests(requests_list);
     for(auto &result : *result_files)
     {
         auto it = config_files_list->begin()+i;
-        const std::string directory_file = it->dump();
+        std::string directory_file = it->dump();
+        int size = directory_file.size();
+        if(size >0 && directory_file[0] == '"' && directory_file[size-1] == '"')
+        {
+            directory_file = directory_file.substr(1, size - 2);
+        }
         std::vector<std::pair<std::string,size_t>> result_vec;
-       // std::cout << "file : "<< directory_file << "\n";
+
 
         for(auto &result_ : *result_requests)
         {
@@ -60,13 +63,13 @@ std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
         }
         ++i;
     }
+     std::sort(relativeIndex->begin(), relativeIndex->end());
     return relativeIndex;
 }
 
 std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_files(const std::shared_ptr<const nlohmann::json> &config_files_list)
 {
-    // Начало измерения времени
-    //auto start = std::chrono::high_resolution_clock::now();
+
     std::vector<std::string> files_list;
 
 
@@ -86,7 +89,7 @@ std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_
         std::hash<std::string> hasher;
         size_t word_hash = hasher(files_list[i]);
         std::string json_file =  "./work/" + std::to_string(word_hash);
-        //std::cout << "size_t counter{} = " <<  counter << "\n";
+
         bool control{false};
         for(size_t j {} ; j < i;++j)
         {
@@ -97,13 +100,11 @@ std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_
             }
         }
         if(control){
-            //std::cout << "duplikate " <<  files_list[i] << "\n";
+
             continue;
         }
         if(control_read(files_list[i], json_file))
         {
-
-           // std::cout << "threads " << threads.size() << "\n";
             auto foo = [&, i, json_file](){
                 {
                     std::unique_lock<std::mutex> lock(mutex);
@@ -136,13 +137,11 @@ std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_
             else
             {
 
-                threads.emplace_back(foo); // Создание и запуск потока
+                threads.emplace_back(foo);
             }
         }
         else
         {
-           // std::cout << "threads " << threads.size() << "\n";
-
             auto foo = [&, i, json_file](){
                 {
                     std::unique_lock<std::mutex> lock(mutex);
@@ -154,7 +153,6 @@ std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_
                 *it = parse_buffer(buffer);
                 if(!it->empty())
                 {
-                    std::cout << "запись " << files_list[i] << "\n";
                         saveToFile(json_file,*it);
                 }
                 {
@@ -170,17 +168,13 @@ std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_
             }
             else
             {
-                threads.emplace_back(foo); // Создание и запуск потока
+                threads.emplace_back(foo);
             }
         }
     }
     for (auto& thread : threads) {
         thread.join();
     }
-//    auto end = std::chrono::high_resolution_clock::now();
-//    std::chrono::duration<double, std::milli> duration = end - start;
-//    std::cout << "Время выполнения: " << duration.count() << " мс" << std::endl;
-
     return rezult;
 }
 
@@ -195,32 +189,18 @@ std::shared_ptr<std::map<size_t, size_t> > SearchServer::get_result_requests(con
 
 }
 
-size_t SearchServer::get_id(const std::string &word,std::vector<std::pair<std::string,size_t>> &miniBuffer)
+size_t SearchServer::get_id(const std::string &word,std::map<std::string, size_t> &miniBuffer)
 {
 
-    int size = miniBuffer.size();
-
-    for (int i{}; i < size; ++i) {
-        if (miniBuffer[i].first == word) {
-            // Перемещаем найденную пару в конец miniBuffer, чтобы пометить ее как недавно использованную
-            auto item = miniBuffer[i];
-            miniBuffer.erase(miniBuffer.begin() + i);
-            miniBuffer.push_back(item);
-            return item.second;
-        }
+    auto it = miniBuffer.find(word);
+    if (it != miniBuffer.end()) {
+        return it->second;
     }
-    //если в словаре нету, то добавится
-    dictionary.insert(word); // потоко безопастно
+
+    dictionary.insert(word);
     size_t id = dictionary.at(word);
+    miniBuffer[word] = id;
 
-    if (size >= 100)
-    {   // удаляем самый первый , он самый редкий в использовании
-         miniBuffer.erase(miniBuffer.begin());
-    }
-    else
-    {
-         miniBuffer.push_back(std::make_pair(word, id));
-    }
     return id;
 }
 
@@ -240,7 +220,7 @@ bool SearchServer::control_read(const std::string &directory_file, const std::st
 
 void SearchServer::to_string(std::vector<std::string> &vec, const std::shared_ptr<const nlohmann::json> &list)
 {
-    int size = static_cast<int>(list->size());
+    auto size = list->size();
     vec.reserve(size);
     for(auto &it:*list)
     {
@@ -248,9 +228,7 @@ void SearchServer::to_string(std::vector<std::string> &vec, const std::shared_pt
 
          if (stringValue.size() > 1 && stringValue.front() == '"' && stringValue.back() == '"') {
             stringValue = stringValue.substr(1, stringValue.size() - 2);
-         }
-
-        // std::cout << stringValue << '\n';
+         }       
          vec.push_back(stringValue);
     }
 }
@@ -258,28 +236,18 @@ void SearchServer::to_string(std::vector<std::string> &vec, const std::shared_pt
 std::map<size_t, size_t> SearchServer::parse_buffer(const std::shared_ptr<std::vector<std::string>> buffer)
 {
     try {
-        std::vector<std::pair<std::string,size_t>> miniBuffer;
-        miniBuffer.reserve(100);
+        std::map<std::string, size_t> miniBuffer;
         std::map<size_t, size_t> file;
         for (auto &i : *buffer)
         {
             std::istringstream iss(i);
             std::string word;
             while (iss >> word) {
-                // Удаляем символ, если он не является буквой или цифрой или
-                word.erase(std::remove_if(word.begin(), word.end(), [](unsigned char c) {
-                               return !(std::isalnum(static_cast<unsigned char>(c)) ||
-                                        c == '@' || c == '#' || c == '$' ||
-                                        c == '^' || c == '&' || c == '/' ||
-                                        c == '\\' || c == '%');
-                           }), word.end());
-                std::transform(word.begin(), word.end(), word.begin(), [](unsigned char c) {
-                    return std::tolower(c); // всё в нижний регистор
-                });
-                if (word.size() > 1)
+                std::vector<std::string> words;
+                words = transformation(word);
+                for(auto &word_ : words)
                 {
-                   // std::cout << word << "\n";
-                    auto id = get_id(word,miniBuffer);// потоко безопастно
+                    auto id = get_id(word_,miniBuffer);
                     ++file[id];
                 }
             }
@@ -301,6 +269,26 @@ std::map<size_t, size_t> SearchServer::parse_buffer(const std::shared_ptr<std::v
     }
 }
 
+std::vector<std::string> SearchServer::transformation(std::string &word) const  &
+{
+    word.erase(std::remove_if(word.begin(), word.end(), [](unsigned char c) {
+                   return !(std::isalnum(static_cast<unsigned char>(c)) ||
+                            c == '@' || c == '#' || c == '$' ||
+                            c == '^' || c == '&' || c == '/' ||
+                            c == '\\' || c == '%');
+               }), word.end());
+    std::transform(word.begin(), word.end(), word.begin(), [](unsigned char c) {
+        return std::tolower(c);
+    });
+    if (word.size() > 1)
+    {
+        std::vector<std::string> words{word};
+        return words;
+    }
+    return std::vector<std::string> {};
+}
+
+
 size_t SearchServer::Dictionary::id = 1;
 
 SearchServer::Dictionary::Dictionary():ConverterJSON{1}
@@ -310,9 +298,9 @@ SearchServer::Dictionary::Dictionary():ConverterJSON{1}
         if(!std::filesystem::exists("./work"))
         {
             std::filesystem::create_directories("./work");
-            //std::cout << "./work создана\n";
+
         }
-        // читаем наш словарь и запоняем map
+
         auto json = reading_json(dictionary);
        for (const auto& item : json.items())
         {
@@ -340,12 +328,12 @@ SearchServer::Dictionary::~Dictionary()
 bool SearchServer::Dictionary::insert(const std::string &value)
 {
     std::lock_guard<std::mutex> lock(THReads::insert_lock);
-    // Ключ  уже существует
+
     if (valueToID.find(value) != valueToID.end())
     {
          return false;
     }
-    // получаем уникальный id
+
     while (idToValue.find(id) != idToValue.end()) {
          ++id;
     }

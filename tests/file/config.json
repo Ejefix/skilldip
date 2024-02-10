@@ -1,0 +1,39 @@
+{
+    "config": {
+        "max_responses": 5,
+        "name": "Diplom",
+        "version": "1.0.0"
+    },
+    "files": [
+       	true,
+       	12345,
+       	false,
+        "../resources/file001.txt",
+        "../resources/file001.txt",
+        "../resources/file001.txt",
+        "../resources/file001.txt",
+        "../resources/file001.txt",
+            	"TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST_TEST",
+        "/sd/sd/dsds/sddccc",
+        "./tests/file/Biggers.txt",
+        "./tests/file/Britannica.txt",
+        "./tests/file/Dzhordan.txt",
+        "./tests/file/ff.txt",
+        "./tests/file/odu.txt",
+        "./tests/file/Biggers.txt",
+        "./tests/file/Britannica.txt",
+        "./tests/file/Dzhordan.txt",
+        "./tests/file/Turpin.txt",
+        "./tests/file/Biggers2.txt",
+        "./tests/file/Britannica2.txt",
+        "./tests/file/Dzhordan2.txt",
+        "./tests/file/Dzhordan3.txt",
+        "./tests/file/Biggers.txt",
+        "./tests/file/Britannica.txt",
+        "./tests/file/Dzhordan.txt",
+        "./tests/file/ff.txt",
+        "./tests/file/odu.txt"
+       
+    ]
+}
+
