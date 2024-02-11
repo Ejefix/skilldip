@@ -17,7 +17,7 @@ cd build
 Конфигурация
 
 Для конфигурации проекта используйте cmake, указав путь установки через параметр -DCMAKE_INSTALL_PREFIX. Если вы хотите выключить сборку тестов, используйте -DBUILD_TESTS=OFF.
-``
+```
 cmake -DCMAKE_INSTALL_PREFIX=/путь/установки -DBUILD_TESTS=OFF ..
 ```
 Сборка
