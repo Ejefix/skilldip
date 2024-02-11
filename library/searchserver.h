@@ -13,6 +13,7 @@ public:
 
     virtual ~SearchServer(){};
     std::shared_ptr<std::vector<RelativeIndex>> get_RelativeIndex();
+    void get_answers(int max_responses, const std::string &directory_file);
 protected:
 
     // возможно захотим распарсить ссылки или есть другие требования

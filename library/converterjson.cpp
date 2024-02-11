@@ -51,9 +51,8 @@ void Skeleton::set_max_size_PerThread(float max_sizeMB)
 
 std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &directory_file)const
 {
-    //std::cerr << "" ;
-    try {
 
+    try {
     size_t size_file = get_file_size(directory_file);
     const auto buffer = std::make_shared<std::vector<std::string>>();
 
@@ -313,6 +312,11 @@ void ConverterJSON::update()
 
     get_list_files_config(str_size_config,filter_config);
     get_list_files_requests(str_size_requests,filter_requests);
+}
+
+int ConverterJSON::get_max_responses()
+{
+    return max_responses;
 }
 
 void ConverterJSON::set_filter_configJSON(int str_size, bool filter)

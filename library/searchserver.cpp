@@ -13,7 +13,7 @@ SearchServer::SearchServer(int maxThreads,
     :Skeleton{1},config_files_list{config_files_list},requests_list{requests_list},
     relativeIndex{std::make_shared<std::vector<RelativeIndex>>()}
 {
-    //установка потоков
+
     SearchServerThreads = maxThreads;
     if (SearchServerThreads <  1 || SearchServerThreads > THReads::num_threads)
         SearchServerThreads = THReads::num_threads;
@@ -63,8 +63,38 @@ std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
         }
         ++i;
     }
-     std::sort(relativeIndex->begin(), relativeIndex->end());
+    std::sort(relativeIndex->begin(), relativeIndex->end());
     return relativeIndex;
+}
+
+void SearchServer::get_answers(int max_responses,const std::string &directory_file)
+{
+
+    auto rel = get_RelativeIndex();
+    auto it = rel->begin();
+    nlohmann::ordered_json js_;
+    nlohmann::ordered_json js;
+    auto now = std::chrono::system_clock::now();
+    auto now_c = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S");
+    js_["data"] = ss.str();
+
+    for (int i{}; it !=rel->end() && i < max_responses; ++i,++it)
+    {
+        js[it->get_directory_file()] = it->get_Relative_Relevancy();
+    }
+    if(js.empty())
+        js_["answers"] = "false";
+    else js_["answers"] = js;
+    std::ofstream file(directory_file);
+    if (!file.is_open()) {
+        std::cerr << "Не удалось открыть файл для записи: " << directory_file << '\n';
+
+    }
+    file << js_.dump(4);
+    file.close();
+
 }
 
 std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_files(const std::shared_ptr<const nlohmann::json> &config_files_list)

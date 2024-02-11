@@ -55,10 +55,10 @@ void test_timeRequests(std::string directory_file)
 
     SearchServer y{maxThreads,x.config_files_list, x.requests_list};
     auto rel = y.get_RelativeIndex();
-    if(test == 0){
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double, std::milli> duration = end - start;
-        std::cout << "test time Requests : " << duration.count() << " ms" << std::endl;}
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> duration = end - start;
+    std::cout << "test time Requests : " << duration.count() << " ms" << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -97,8 +97,6 @@ int main(int argc, char **argv) {
 
                 auto  rel = y.get_RelativeIndex();
 
-
-
                 test_count(rel, "./tests/file/Biggers2.txt", "test2",300);
                 test_count(rel, "./tests/file/Biggers2.txt", "test",200);
                 test_count(rel, "./tests/file/Biggers2.txt", "test", 50);
@@ -106,11 +104,9 @@ int main(int argc, char **argv) {
                 auto end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double, std::milli> duration = end - start;
                 std::cout << "full tests time : " << duration.count() << " ms" << "\n\n";
-
             }
             else
             {
-
                 std::cout << "wait, thread test " << maxThreads << '\n';
                 ConverterJSON x{maxThreads};
                 x.config_directory = "./tests/file/config4.json";

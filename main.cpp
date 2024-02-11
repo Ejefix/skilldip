@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
         x.set_filter_configJSON(true);
         x.update();
         SearchServer y{maxThreads,x.config_files_list, x.requests_list};
-        auto rel = y.get_RelativeIndex();
+        y.get_answers(x.get_max_responses(),x.answers_directory);
         return 0;
     } catch (...) {
         std::cerr << "main error! \n";

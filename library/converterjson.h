@@ -41,9 +41,8 @@ public:
     ConverterJSON(int maxThreads);
 
     nlohmann::json reading_json(const std::string &directory_file,const size_t max_file_size = 105000000)const  ; // примрено 100 MB
-
     void update();
-
+    int get_max_responses();
     void set_filter_configJSON(int str_size ,bool filter);
     void set_filter_configJSON(bool filter,int str_size );
     void set_filter_configJSON(int str_size );
@@ -78,7 +77,7 @@ private:
     // контроль шапки
     static bool control_config(const nlohmann::json &json_data,const std::string &version, const std::string &project_name);
 
-    // удаляет элемент, если не std::string или длинна выше int str_size
+    // удаляет элемент, если не std::string или длинна выше  str_size
     static void filter_files(std::shared_ptr<nlohmann::json> filter_list,int str_size);
 
     // парсиниг от [0]->[1]-[2] ... , если отправили кривой буфер вернем пустой контейнер
