@@ -110,6 +110,7 @@ int main(int argc, char **argv) {
             }
             else
             {
+
                 std::cout << "wait, thread test " << maxThreads << '\n';
                 ConverterJSON x{maxThreads};
                 x.config_directory = "./tests/file/config4.json";
@@ -126,7 +127,7 @@ int main(int argc, char **argv) {
         }
         for(auto &j:times_)
         {
-            std::cout << "full tests time : " << j.first << " ms = " ;
+            std::cout << "full  time : " << j.first << " ms = " ;
             std::cout << " maxThreads : " << j.second  << "\n";
         }
 

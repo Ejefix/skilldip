@@ -51,7 +51,7 @@ void Skeleton::set_max_size_PerThread(float max_sizeMB)
 
 std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &directory_file)const
 {
-    std::cerr << "" ;
+    //std::cerr << "" ;
     try {
 
     size_t size_file = get_file_size(directory_file);
