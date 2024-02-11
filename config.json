@@ -5,7 +5,11 @@
         "version": "1.0.0"
     },
     "files": [
-       	
+       	"./tests/file/Biggers.txt",
+        "./tests/file/Britannica.txt",
+        "./tests/file/Dzhordan.txt",
+        "./tests/file/ff.txt",
+        "./tests/file/odu.txt"
        
     ]
 }

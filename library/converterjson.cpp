@@ -51,7 +51,9 @@ void Skeleton::set_max_size_PerThread(float max_sizeMB)
 
 std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &directory_file)const
 {
+    std::cerr << "" ;
     try {
+
     size_t size_file = get_file_size(directory_file);
     const auto buffer = std::make_shared<std::vector<std::string>>();
 
@@ -122,9 +124,13 @@ std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &
     return buffer;
     }
     catch (...) {
-    std::cerr << "file " << directory_file << " is missing \n";
+    {
+        std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
+        std::cerr << "file " << directory_file << " is missing \n";
     }
     return std::make_shared<std::vector<std::string>>();
+    }
+
 }
 
 void Skeleton::set_buffer(std::vector<std::string > &buffer,const size_t size_file)const

@@ -127,8 +127,9 @@ std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_
                 {
                     std::unique_lock<std::mutex> lock(mutex);
                     --counter;
-                    cv.notify_one();
                 }
+                    cv.notify_one();
+
             };
             if(SearchServerThreads == 1)
             {
@@ -269,7 +270,7 @@ std::map<size_t, size_t> SearchServer::parse_buffer(const std::shared_ptr<std::v
     }
 }
 
-std::vector<std::string> SearchServer::transformation(std::string &word) const  &
+std::vector<std::string> SearchServer::transformation(std::string &word) const
 {
     word.erase(std::remove_if(word.begin(), word.end(), [](unsigned char c) {
                    return !(std::isalnum(static_cast<unsigned char>(c)) ||

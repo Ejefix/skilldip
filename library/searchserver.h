@@ -18,7 +18,7 @@ protected:
     // возможно захотим распарсить ссылки или есть другие требования
     // а может хотите искать константное слово, учитывая регистр и другие факторы
     // часть логики parse_buffer
-    virtual std::vector<std::string> transformation(std::string &word) const &;
+    virtual std::vector<std::string> transformation(std::string &word) const ;
 private:
     std::shared_ptr<std::vector<RelativeIndex>> relativeIndex;
     size_t SearchServerThreads;

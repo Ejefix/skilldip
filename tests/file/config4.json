@@ -1,0 +1,30 @@
+{
+    "config": {
+        "max_responses": 5,
+        "name": "Diplom",
+        "version": "1.0.0"
+    },
+    "files": [
+       	
+        "./tests/file/Biggers.txt",
+        "./tests/file/Britannica.txt",
+        "./tests/file/Dzhordan.txt",
+        "./tests/file/ff.txt",
+        "./tests/file/odu.txt",
+        "./tests/file/Biggers.txt",
+        "./tests/file/Britannica.txt",
+        "./tests/file/Dzhordan.txt",
+        "./tests/file/Turpin.txt",
+        "./tests/file/Biggers2.txt",
+        "./tests/file/Britannica2.txt",
+        "./tests/file/Dzhordan2.txt",
+        "./tests/file/Dzhordan3.txt",
+        "./tests/file/Biggers.txt",
+        "./tests/file/Britannica.txt",
+        "./tests/file/Dzhordan.txt",
+        "./tests/file/ff.txt",
+        "./tests/file/odu.txt"
+       
+    ]
+}
+
