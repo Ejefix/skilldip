@@ -1,4 +1,4 @@
-# Diplom Project
+# Project
 
 ## Описание
 
