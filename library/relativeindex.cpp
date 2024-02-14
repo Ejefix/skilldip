@@ -39,35 +39,3 @@ std::vector<std::pair<std::string, size_t> > RelativeIndex::get_result()
 {
     return result;
 }
-
-bool RelativeIndex::operator >(RelativeIndex &in)
-{
-    return this->get_Relative_Relevancy() < in.get_Relative_Relevancy();
-
-}
-
-bool RelativeIndex::operator <(RelativeIndex &in)
-{
-    return this->get_Relative_Relevancy() > in.get_Relative_Relevancy();
-}
-
-bool RelativeIndex::operator ==(RelativeIndex &in)
-{
-    return this->get_Relative_Relevancy() == in.get_Relative_Relevancy();
-}
-
-bool RelativeIndex::operator >=(RelativeIndex &in)
-{
-    return this->get_Relative_Relevancy() <= in.get_Relative_Relevancy();
-}
-
-bool RelativeIndex::operator <=(RelativeIndex &in)
-{
-    return this->get_Relative_Relevancy() >= in.get_Relative_Relevancy();
-}
-
-bool RelativeIndex::operator !=(RelativeIndex &in)
-{
-    return this->get_Relative_Relevancy() != in.get_Relative_Relevancy();
-}
-

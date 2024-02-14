@@ -7,12 +7,12 @@ int maxThreads = 0;
 int test{0};
 std::vector<std::pair<double,int>> times_;
 
-bool test_config(ConverterJSON &x,std::string directory_file)
+bool test_config(ConfigJSON &x,std::string directory_file)
 {
 
-    x.config_directory = directory_file;
+    x.directory = directory_file;
     x.update();
-    if(x.config_files_list->empty())
+    if(x.list->empty())
     {
         return false;
     }
@@ -23,9 +23,10 @@ void test_count(std::shared_ptr<std::vector<RelativeIndex>> rel, std::string dir
     size_t count {};
     for(auto it = rel->begin();it != rel->end();++it)
     {
-
+       // std::cout<< directory_file << " VS " << it->get_directory_file() << "\n";
         if (directory_file == it->get_directory_file())
         {
+           // std::cout << " file ok \n";
             auto vec = it->get_result();
             for (auto &vec_ : vec) {
                 if(vec_.first == word )
@@ -38,23 +39,26 @@ void test_count(std::shared_ptr<std::vector<RelativeIndex>> rel, std::string dir
     }
     if ( count == result)
     {
-        std::cout << "test count ok\n";
+        std::cout << "test count ok -> " << count << " vs " << result << '\n';;
     }
     else
     {
-        std::cout << directory_file << " test count not ok " << count << " vs " << result << '\n';
+        std::cout << directory_file << " test count not ok -> " << count << " vs " << result << '\n';
     }
 }
 void test_timeRequests(std::string directory_file)
 {
     auto start = std::chrono::high_resolution_clock::now();
-    ConverterJSON x{maxThreads};
-    x.config_directory = "./tests/file/config.json";
-    x.requests_directory = directory_file;
+    ConfigJSON x{maxThreads};
+    x.directory = "./tests/file/config.json";
     x.update();
+    RequestsJSON y{maxThreads};
+    y.update();
 
-    SearchServer y{maxThreads,x.config_files_list, x.requests_list};
-    auto rel = y.get_RelativeIndex();
+
+
+    SearchServer z{maxThreads,x.list, y.list};
+    auto rel = z.get_RelativeIndex();
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> duration = end - start;
@@ -65,17 +69,19 @@ int main(int argc, char **argv) {
 
     try {
 
-        while (test < 15){
+        while (test < 5){
 
             auto start = std::chrono::high_resolution_clock::now();
 
             if(test == 0){
-                  ConverterJSON x{maxThreads};
-                x.requests_directory = "./tests/file/requests.json";
-                x.config_directory = "./tests/file/config.json";
+                ConfigJSON x{maxThreads};
+                RequestsJSON y{maxThreads};
+                y.directory = "./tests/file/requests.json";
+
 
                 std::cout  << "test config start " << (!test_config(x, "./tests/file/config1.json") ? "test true " : "test false") << "\n\n";
                 std::cout  << "test config start " << (!test_config(x, "./tests/file/config2.json") ? "test true" : "test false")<< "\n\n";
+                std::cout  << "test config start \n" << (!test_config(x, "./tests/file/confssig.json") ? "test true" : "test false")<< "\n\n";
                 std::cout  << "test config start \n" << (test_config(x, "./tests/file/config.json") ? "test true" : "test false")<< "\n\n";
 
 
@@ -93,9 +99,10 @@ int main(int argc, char **argv) {
                 std::cout << "standart requests.json x40 \n\n";
 
                 x.update();
-                SearchServer y{maxThreads,x.config_files_list, x.requests_list};
+                y.update();
+                SearchServer z{maxThreads,x.list, y.list};
 
-                auto  rel = y.get_RelativeIndex();
+                auto  rel = z.get_RelativeIndex();
 
                 test_count(rel, "./tests/file/Biggers2.txt", "test2",300);
                 test_count(rel, "./tests/file/Biggers2.txt", "test",200);
@@ -108,12 +115,14 @@ int main(int argc, char **argv) {
             else
             {
                 std::cout << "wait, thread test " << maxThreads << '\n';
-                ConverterJSON x{maxThreads};
-                x.config_directory = "./tests/file/config4.json";
-                x.requests_directory = "./tests/file/requests4.json";
+                ConfigJSON x{maxThreads};
+                RequestsJSON y{maxThreads};
+                x.directory = "./tests/file/config4.json";
+                y.directory = "./tests/file/requests4.json";
                 x.update();
-                SearchServer y{maxThreads,x.config_files_list, x.requests_list};
-                auto rel = y.get_RelativeIndex();
+                y.update();
+                SearchServer z{maxThreads,x.list, y.list};
+                auto rel = z.get_RelativeIndex();
                 auto end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double, std::milli> duration = end - start;
                 times_.push_back(std::make_pair(duration.count(),maxThreads));
@@ -123,7 +132,7 @@ int main(int argc, char **argv) {
         }
         for(auto &j:times_)
         {
-            std::cout << "full  time : " << j.first << " ms = " ;
+            std::cout << "full  time : " << j.first << " ms, " ;
             std::cout << " maxThreads : " << j.second  << "\n";
         }
 

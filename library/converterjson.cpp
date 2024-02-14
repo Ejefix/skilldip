@@ -5,28 +5,19 @@
 #include "version_main.h"
 #include <filesystem>
 #include <cstdlib>
+#include <mutex>
 
 
-namespace THReads {
 std::mutex mutex_cerr;
-std::mutex insert_lock;
-}
 
 
-const std::string Skeleton::main_project_version {PROJECT_VERSION};
-const std::string Skeleton::project_name{PROJECT_NAME};
+const std::string main_project_version {PROJECT_VERSION};
+const std::string project_name{PROJECT_NAME};
 
 
-Skeleton::Skeleton(int maxThreads)
-{
-    this->maxThreads = maxThreads;
-    max_sizeMB = 300;
-    if (maxThreads < 1 || maxThreads > THReads::num_threads)
-        this->maxThreads = THReads::num_threads;
-}
 
 
-size_t Skeleton::get_data_file_sec(const std::string &directory_file)
+size_t Info_file::data_sec(const std::string &directory_file)
 {
     if (!std::filesystem::exists(directory_file)) {
         throw std::runtime_error("File is missing: " + directory_file);
@@ -37,102 +28,103 @@ size_t Skeleton::get_data_file_sec(const std::string &directory_file)
     return last_modified_time;
 }
 
-size_t Skeleton::get_file_size(const std::string &directory_file)
+size_t Info_file::size(const std::string &directory_file)
 {
     return std::filesystem::file_size(directory_file);
 }
 
-void Skeleton::set_max_size_PerThread(float max_sizeMB)
-{
-    if (max_sizeMB < 0)
-        this->max_sizeMB = 1;
-    this->max_sizeMB = max_sizeMB;
-}
+//===================================================================================================================
 
-std::shared_ptr<std::vector<std::string>> Skeleton::readFile(const std::string &directory_file)const
+
+std::shared_ptr<std::vector<std::string>> ReadFile::readFile(const std::string &directory_file,int maxThreads,  size_t max_sizeMB)
 {
 
     try {
-    size_t size_file = get_file_size(directory_file);
-    const auto buffer = std::make_shared<std::vector<std::string>>();
+        if (maxThreads < 1 || maxThreads > THReads::num_threads)
+            maxThreads = THReads::num_threads;
+        if (max_sizeMB < 300)
+            max_sizeMB = 300;
+        size_t size_file = Info_file::size(directory_file);
+        const auto buffer = std::make_shared<std::vector<std::string>>();
 
-    set_buffer(*buffer, size_file);
+        set_buffer(*buffer, size_file,maxThreads,max_sizeMB );
 
-    std::vector<std::thread> threads;
+        std::vector<std::thread> threads;
 
-    size_t size = buffer->size();
-    bool errorOccurred = false;
+        size_t size = buffer->size();
+        bool errorOccurred = false;
 
-    for (int i{};i < size;++i)
-    {
-        if (i == size-1)
-        {   try {
+        for (int i{};i < size;++i)
+        {
+            if (i == size-1)
+            {   try {
 
-                readFileToBuffer(directory_file, &((*buffer)[i][0]), buffer->at(0).size() * i, buffer->at(i).size());
-            }
-            catch (const std::exception& e) {
-                if (!errorOccurred)
-                {
-                    errorOccurred = true;
-                    std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
-                    std::cerr << "error: " << e.what() << '\n';
+                    readFileToBuffer(directory_file, &((*buffer)[i][0]), buffer->at(0).size() * i, buffer->at(i).size());
                 }
-                buffer->at(i).clear();
-            }
-            catch (...) {
-
-                if (!errorOccurred)
-                {
-                    errorOccurred = true;
-                    std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
-                    std::cerr << "error "  << '\n';
+                catch (const std::exception& e) {
+                    if (!errorOccurred)
+                    {
+                        errorOccurred = true;
+                        std::lock_guard<std::mutex> lock(mutex_cerr);
+                        std::cerr << "error: " << e.what() << '\n';
+                    }
+                    buffer->at(i).clear();
                 }
-                buffer->at(i).clear();
+                catch (...) {
+
+                    if (!errorOccurred)
+                    {
+                        errorOccurred = true;
+                        std::lock_guard<std::mutex> lock(mutex_cerr);
+                        std::cerr << "error "  << '\n';
+                    }
+                    buffer->at(i).clear();
+                }
             }
+            else{
+                threads.emplace_back(
+                    [i,&directory_file,&buffer,&errorOccurred](){
+                        try {
+                            readFileToBuffer(directory_file, &((*buffer)[i][0]), buffer->at(0).size() * i, buffer->at(i).size());
+                        }
+                        catch (const std::exception& e) {
+                            if (!errorOccurred)
+                            {
+                                errorOccurred = true;
+                                std::lock_guard<std::mutex> lock(mutex_cerr);
+                                std::cerr << "error: " << e.what() << '\n';
+                            }
+                            buffer->at(i).clear();
+                        }
+                        catch (...) {
+
+                            if (!errorOccurred)
+                            {
+                                errorOccurred = true;
+                                std::lock_guard<std::mutex> lock(mutex_cerr);
+                                std::cerr << "error "  << '\n';
+                            }
+                            buffer->at(i).clear();
+                        }
+                    });}
         }
-        else{
-            threads.emplace_back(
-                [this,i,&directory_file,&buffer,&errorOccurred](){
-                    try {
-                        readFileToBuffer(directory_file, &((*buffer)[i][0]), buffer->at(0).size() * i, buffer->at(i).size());
-                    }
-                    catch (const std::exception& e) {
-                        if (!errorOccurred)
-                        {
-                            errorOccurred = true;
-                            std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
-                            std::cerr << "error: " << e.what() << '\n';
-                        }
-                        buffer->at(i).clear();
-                    }
-                    catch (...) {
-
-                        if (!errorOccurred)
-                        {
-                            errorOccurred = true;
-                            std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
-                            std::cerr << "error "  << '\n';
-                        }
-                        buffer->at(i).clear();
-                    }
-                });}
-    }
-    for (auto& thread : threads) {
-        thread.join();
-    }
-    return buffer;
+        for (auto& thread : threads) {
+            thread.join();
+        }
+        return buffer;
     }
     catch (...) {
-    {
-        std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
-        std::cerr << "file " << directory_file << " is missing \n";
-    }
-    return std::make_shared<std::vector<std::string>>();
+        {
+            std::lock_guard<std::mutex> lock(mutex_cerr);
+            std::cerr << "file " << directory_file << " is missing \n";
+        }
+        return std::make_shared<std::vector<std::string>>();
     }
 
 }
 
-void Skeleton::set_buffer(std::vector<std::string > &buffer,const size_t size_file)const
+
+void ReadFile::set_buffer(std::vector<std::string > &buffer,const size_t size_file,int maxThreads,size_t max_sizeMB)
 {
 
     size_t numReadThreads = 1;
@@ -141,9 +133,9 @@ void Skeleton::set_buffer(std::vector<std::string > &buffer,const size_t size_fi
 
 
     if (numReadThreads > maxThreads )
-    numReadThreads =  maxThreads;
+        numReadThreads =  maxThreads;
     if (numReadThreads < 1) {
-    numReadThreads = 1;
+        numReadThreads = 1;
     }
 
 
@@ -161,7 +153,7 @@ void Skeleton::set_buffer(std::vector<std::string > &buffer,const size_t size_fi
     buffer.push_back(j);
 }
 
-void Skeleton::readFileToBuffer(const std::string &directory_file, char *buffer, int start, int stop)const
+void ReadFile::readFileToBuffer(const std::string &directory_file, char *buffer, int start, int stop)
 {
 
     std::ifstream input_file(directory_file, std::ios::binary);
@@ -178,193 +170,9 @@ void Skeleton::readFileToBuffer(const std::string &directory_file, char *buffer,
 
 //===================================================================================================================
 
-ConverterJSON::ConverterJSON(int maxThreads)
-    :Skeleton{maxThreads},config_files_list{std::make_shared<nlohmann::json>()},requests_list{std::make_shared<nlohmann::json>()}
-{
-
-}
-
-bool ConverterJSON::reading_config()
-{
-    try
-    {     
-        nlohmann::json json_data = reading_json(config_directory);
-        if (!control_config(json_data, main_project_version , project_name))
-        {
-            return false;
-        }
-        if (!json_data.contains("files")  )
-        {
-            std::cout << "list files config.json is empty";
-            return false;
-        }
-        if(json_data["config"]["max_responses"].is_number())
-        {
-            max_responses = json_data["config"]["max_responses"].get<int>();
-        }
-        else
-        {
-            max_responses = 0;
-        }
-        if (max_responses < 1)
-            throw std::runtime_error("max_responses no correct");
-
-        time_reading_config = get_data_file_sec(config_directory);
-        *config_files_list = json_data["files"];
-        return true;
-    }
-    catch (const std::exception& e) {
-        std::cerr << "error: " << e.what() << '\n';
-    }
-    catch (...) {
-        std::cerr << "error: reading_config()";
-    }
-    return false;
-}
-
-bool ConverterJSON::control_config(const nlohmann::json &json_data, const std::string &version, const std::string &project_name)
-{
-    try {
-        if (!json_data.contains("config")) {
-            throw std::runtime_error("Config section is missing in the file");
-        }
-        if (json_data["config"]["name"].get<std::string>() !=  project_name)
-        {
-            throw std::runtime_error("The project name specified in the file is incorrect.");
-        }
-        if (json_data["config"]["version"].get<std::string>() != version)
-        {
-            throw std::runtime_error("version is incorrect");
-        }
-        return true;
-    }
-    catch (const std::exception& e) {
-        std::cerr << "error: " << e.what() << '\n';
-    }
-    catch (...) {
-        std::cerr << "error: \n";
-    }
-    return false;
-
-}
-
-nlohmann::json ConverterJSON::reading_json(const std::string &directory_file,const size_t max_file_size)const
-{
-    const size_t size_file = get_file_size(directory_file);
-    if (max_file_size < size_file )
-    {
-        throw std::runtime_error("File size > " + std::to_string(size_file / 1024 / 1024) + " MB in " + directory_file);
-    }
-    auto buffer = std::make_shared<std::vector<std::string>>();
-    buffer = readFile(directory_file);
-    return parse_buffer(*buffer);
-}
-
-void ConverterJSON::get_list_files_config(int str_size,bool filter)
-{
-    try {
-
-        if (time_reading_config < get_data_file_sec(config_directory) && reading_config())
-        {
-            if(filter)
-                filter_files(config_files_list,str_size);
-        }
-        else{
-            if(filter)
-                filter_files(config_files_list,str_size);                    
-        }
-    }
-    catch (const std::exception& e) {
-
-        std::cerr << "error: " << e.what() << '\n';
-
-    }
-    catch (...) {}
-}
-
-void ConverterJSON::get_list_files_requests(int str_size,bool filter)
-{
-    try {
-        if (time_reading_requests < get_data_file_sec(requests_directory) )
-        {
-            nlohmann::json list = reading_json(requests_directory);
-            *requests_list = list["requests"];
-            if(filter)
-                filter_files(requests_list,str_size);          
-
-        }
-        else{
-            if(filter)
-                filter_files(requests_list,str_size);           
-        }
-    }
-    catch (const std::exception& e) {
-        std::cerr << "error: " << e.what() << '\n';
-
-    }
-    catch (...) {}
-}
+ConverterJSON::ConverterJSON():list{std::make_shared<nlohmann::json>()}{
 
 
-
-void ConverterJSON::update()
-{
-
-    get_list_files_config(str_size_config,filter_config);
-    get_list_files_requests(str_size_requests,filter_requests);
-}
-
-int ConverterJSON::get_max_responses()
-{
-    return max_responses;
-}
-
-void ConverterJSON::set_filter_configJSON(int str_size, bool filter)
-{
-    if (str_size > 5)
-    str_size_config = str_size;
-    filter_config = filter;
-    settingsChanged = true;
-
-}
-
-void ConverterJSON::set_filter_configJSON(bool filter, int str_size)
-{
-    set_filter_configJSON(str_size, filter);
-}
-
-void ConverterJSON::set_filter_configJSON(int str_size)
-{
-    set_filter_configJSON(str_size,filter_config);
-}
-
-void ConverterJSON::set_filter_configJSON(bool filter)
-{
-    set_filter_configJSON(str_size_config,filter);
-}
-
-void ConverterJSON::set_filter_requestsJSON(int str_size,bool filter)
-{
-    if (str_size > 5)
-    str_size_requests = str_size;
-    filter_requests = filter;
-    settingsChanged = true;
-
-}
-
-void ConverterJSON::set_filter_requestsJSON(bool filter, int str_size)
-{
-    set_filter_requestsJSON(str_size,filter);
-}
-
-void ConverterJSON::set_filter_requestsJSON(int str_size)
-{
-    set_filter_requestsJSON(str_size,filter_requests);
-}
-
-void ConverterJSON::set_filter_requestsJSON(bool filter)
-{
-    set_filter_requestsJSON(str_size_requests,filter);
 }
 
 void ConverterJSON::filter_files(std::shared_ptr<nlohmann::json> filter_list,int str_size)
@@ -382,7 +190,7 @@ void ConverterJSON::filter_files(std::shared_ptr<nlohmann::json> filter_list,int
     }
 }
 
-nlohmann::json ConverterJSON::parse_buffer(std::vector<std::string> &buffer)const
+nlohmann::json ConverterJSON::parse_buffer(std::vector<std::string> &buffer)
 {
     std::string json_string;
     try {
@@ -412,4 +220,182 @@ nlohmann::json ConverterJSON::parse_buffer(std::vector<std::string> &buffer)cons
     }
     return nlohmann::json{};
 }
+
+void ConverterJSON::set_filter(int str_size, bool filter)
+{
+    if (str_size > 5)
+        str_size = str_size;
+    filter = filter;
+    settingsChanged = true;
+}
+
+void ConverterJSON::set_filter(bool filter, int str_size)
+{
+    set_filter(str_size, filter);
+}
+
+void ConverterJSON::set_filter(int str_size)
+{
+    set_filter(str_size, filter);
+}
+
+void ConverterJSON::set_filter(bool filter)
+{
+    set_filter(str_size, filter);
+}
+
+nlohmann::json ConverterJSON::reading_json(const std::string &directory_file,int maxThreads, size_t max_sizeMB )
+{
+    try {
+
+
+        const size_t size_file = Info_file::size(directory_file);
+        if (max_sizeMB *1024*1024 < size_file )
+        {
+            throw std::runtime_error("File size > " + std::to_string(size_file / 1024 / 1024) + " MB in " + directory_file);
+        }
+        auto buffer = std::make_shared<std::vector<std::string>>();
+        buffer = ReadFile::readFile(directory_file,maxThreads,max_sizeMB);
+        return parse_buffer(*buffer);
+    }
+    catch (const std::exception& e) {
+
+        std::cerr << "error: " << e.what() << '\n';
+        return nlohmann::json{};
+    }
+    catch (...) {
+        return nlohmann::json{};
+    }
+}
+
+//===================================================================================================================
+
+
+int ConfigJSON::get_max_responses()
+{
+    return max_responses;
+}
+
+bool ConfigJSON::reading_config()
+{
+    try
+    {     
+        nlohmann::json json_data = reading_json(directory,maxThreads);
+        if (!control_config(json_data, main_project_version , project_name))
+        {
+            return false;
+        }
+        if (!json_data.contains("files")  )
+        {
+            std::cout << "list files config.json is empty";
+            return false;
+        }
+        if(json_data["config"]["max_responses"].is_number())
+        {
+            max_responses = json_data["config"]["max_responses"].get<int>();
+        }
+        else
+        {
+            max_responses = 0;
+        }
+        if (max_responses < 1)
+            throw std::runtime_error("max_responses no correct");
+
+        time_reading = Info_file::data_sec(directory);
+        *list = json_data["files"];
+        return true;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "error: " << e.what() << '\n';
+    }
+    catch (...) {
+        std::cerr << "error: reading_config()";
+    }
+    return false;
+}
+
+ConfigJSON::ConfigJSON(int maxThreads):ConverterJSON()
+{
+    this->maxThreads =  maxThreads;
+    directory = "./config.json";
+}
+
+bool ConfigJSON::control_config(const nlohmann::json &json_data, const std::string &version, const std::string &project_name)
+{
+    try {
+        if (!json_data.contains("config")) {
+            throw std::runtime_error("Config section is missing in the file");
+        }
+        if (json_data["config"]["name"].get<std::string>() !=  project_name)
+        {
+            throw std::runtime_error("The project name specified in the file is incorrect.");
+        }
+        if (json_data["config"]["version"].get<std::string>() != version)
+        {
+            throw std::runtime_error("version is incorrect");
+        }
+        return true;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "error: " << e.what() << '\n';
+    }
+    catch (...) {
+        std::cerr << "error: \n";
+    }
+    return false;
+
+}
+
+void ConfigJSON::update()
+{
+    try {
+        if (time_reading < Info_file::data_sec(directory) && reading_config())
+        {
+            if(filter)
+                filter_files(list,str_size);
+        }
+        else{
+            if(filter)
+                filter_files(list,str_size);
+        }
+    }
+    catch (const std::exception& e) {
+
+        std::cerr << "error: " << e.what() << '\n';
+
+    }
+    catch (...) {}
+}
+
+//===================================================================================================================
+
+void RequestsJSON::update()
+{
+    try {
+        if (time_reading < Info_file::data_sec(directory) )
+        {
+            nlohmann::json list_ = reading_json(directory,maxThreads);
+            *list = list_["requests"];
+            if(filter)
+                filter_files(list,str_size);
+        }
+        else{
+            if(filter)
+                filter_files(list,str_size);
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "error: " << e.what() << '\n';
+
+    }
+    catch (...) {std::cerr << "error\n";}
+}
+
+RequestsJSON::RequestsJSON(int maxThreads):ConverterJSON()
+{
+    this->maxThreads =  maxThreads;
+    directory = "./requests.json";
+}
+
+
 

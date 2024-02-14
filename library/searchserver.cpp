@@ -4,13 +4,13 @@
 #include <fstream>
 #include <functional>
 #include <condition_variable>
-
-
+std::mutex insert_lock;
+std::mutex mutex_cerr_;
 
 SearchServer::SearchServer(int maxThreads,
                            const std::shared_ptr<const nlohmann::json>& config_files_list,
                            const std::shared_ptr<const nlohmann::json>& requests_list)
-    :Skeleton{1},config_files_list{config_files_list},requests_list{requests_list},
+    :config_files_list{config_files_list},requests_list{requests_list},
     relativeIndex{std::make_shared<std::vector<RelativeIndex>>()}
 {
 
@@ -27,9 +27,15 @@ SearchServer::SearchServer(int maxThreads,
 
 std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
 {
-    if(config_files_list->empty() || config_files_list->empty())
+    if(config_files_list->empty() )
     {
-        return nullptr;
+
+        return std::make_shared<std::vector<RelativeIndex>>();
+    }
+
+    if( requests_list->empty())
+    {
+        return std::make_shared<std::vector<RelativeIndex>>();
     }
     auto result_files = get_result_files(config_files_list);
     size_t i{};
@@ -63,15 +69,18 @@ std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
         }
         ++i;
     }
-    std::sort(relativeIndex->begin(), relativeIndex->end());
+    std::sort(relativeIndex->begin(), relativeIndex->end(),[](RelativeIndex lhs, RelativeIndex rhs){
+        return lhs.get_Relative_Relevancy() > rhs.get_Relative_Relevancy();});
     return relativeIndex;
 }
 
-void SearchServer::get_answers(int max_responses,const std::string &directory_file)
+bool SearchServer::get_answers(int max_responses,const std::string &directory_file)
 {
-
+    bool ok{true};
     auto rel = get_RelativeIndex();
+
     auto it = rel->begin();
+
     nlohmann::ordered_json js_;
     nlohmann::ordered_json js;
     auto now = std::chrono::system_clock::now();
@@ -85,16 +94,20 @@ void SearchServer::get_answers(int max_responses,const std::string &directory_fi
         js[it->get_directory_file()] = it->get_Relative_Relevancy();
     }
     if(js.empty())
+    {
         js_["answers"] = "false";
+        ok = false;
+    }
+
     else js_["answers"] = js;
     std::ofstream file(directory_file);
     if (!file.is_open()) {
-        std::cerr << "Не удалось открыть файл для записи: " << directory_file << '\n';
-
+        std::cerr << "File creation error " << directory_file << '\n';
+        ok = false;
     }
     file << js_.dump(4);
     file.close();
-
+    return ok;
 }
 
 std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_files(const std::shared_ptr<const nlohmann::json> &config_files_list)
@@ -142,7 +155,7 @@ std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_
                     ++counter;
                 }
                 std::map<size_t, size_t> rez;
-                auto json = dictionary.reading_json(json_file);
+                auto json = ConverterJSON::reading_json(json_file);
                 for (const auto& item : json.items())
                 {
                     std::string key = item.key();
@@ -180,7 +193,7 @@ std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_
                     ++counter;
                 }
                 auto it = rezult->begin() + i ;
-                auto buffer =  readFile(files_list[i]);
+                auto buffer =  ReadFile::readFile(files_list[i],1,300);
                 *it = parse_buffer(buffer);
                 if(!it->empty())
                 {
@@ -239,8 +252,8 @@ bool SearchServer::control_read(const std::string &directory_file, const std::st
 {
     try {
 
-         auto file = get_data_file_sec(directory_file);
-         auto file_ = get_data_file_sec(json_file);
+         auto file = Info_file::data_sec(directory_file);
+         auto file_ = Info_file::data_sec(json_file);
          return file_ > file;
     }
     catch (...)
@@ -288,13 +301,13 @@ std::map<size_t, size_t> SearchServer::parse_buffer(const std::shared_ptr<std::v
     }
     catch (const std::exception& e) {
         buffer->clear();
-        std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
+        std::lock_guard<std::mutex> lock( mutex_cerr_);
         std::cerr << "error: SearchServer::parse_buffer: " << e.what() << '\n';
         return std::map<size_t, size_t>();
     }
     catch (...) {
         buffer->clear();
-        std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
+        std::lock_guard<std::mutex> lock( mutex_cerr_);
         std::cerr << "error: SearchServer::parse_buffer: unknown error" << '\n';
         return std::map<size_t, size_t>();
     }
@@ -322,17 +335,17 @@ std::vector<std::string> SearchServer::transformation(std::string &word) const
 
 size_t SearchServer::Dictionary::id = 1;
 
-SearchServer::Dictionary::Dictionary():ConverterJSON{1}
+SearchServer::Dictionary::Dictionary()
 {
 
     try {
+
         if(!std::filesystem::exists("./work"))
         {
             std::filesystem::create_directories("./work");
 
         }
-
-        auto json = reading_json(dictionary);
+        auto json = ConverterJSON::reading_json(directory);
        for (const auto& item : json.items())
         {
             std::string key = item.key();
@@ -342,11 +355,11 @@ SearchServer::Dictionary::Dictionary():ConverterJSON{1}
        }
     }
     catch (const std::exception& e) {
-        std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
+        std::lock_guard<std::mutex> lock( mutex_cerr_);
         std::cerr << "error: reading_json: " << e.what() << '\n';
     }
     catch (...) {
-        std::lock_guard<std::mutex> lock(THReads::mutex_cerr);
+        std::lock_guard<std::mutex> lock( mutex_cerr_);
         std::cerr << "error: reading_json: "  << '\n';
     }
 }
@@ -358,7 +371,7 @@ SearchServer::Dictionary::~Dictionary()
 
 bool SearchServer::Dictionary::insert(const std::string &value)
 {
-    std::lock_guard<std::mutex> lock(THReads::insert_lock);
+    std::lock_guard<std::mutex> lock(insert_lock);
 
     if (valueToID.find(value) != valueToID.end())
     {
@@ -384,6 +397,7 @@ std::string SearchServer::Dictionary::at(size_t id)const
     return idToValue.at(id);
 }
 
+
 bool SearchServer::Dictionary::saveToFile() const
 {
 
@@ -391,9 +405,9 @@ bool SearchServer::Dictionary::saveToFile() const
     for (const auto& [value, id] : valueToID) {
          js[value] = id;
     }
-    std::ofstream file(dictionary.c_str());
+    std::ofstream file(directory.c_str());
     if (!file.is_open()) {
-         std::cerr << "Не удалось открыть файл для записи: " << dictionary << '\n';
+         std::cerr << "File creation error " << directory << '\n';
          return false;
     }
     file << js;
@@ -410,7 +424,7 @@ bool SearchServer::saveToFile(const std::string &directory_file, const std::map<
     }
     std::ofstream file(directory_file.c_str());
     if (!file.is_open()) {
-         std::cerr << "Не удалось открыть файл для записи: " << directory_file << '\n';
+         std::cerr << "File creation error " << directory_file << '\n';
          return false;
     }
     file << js;

@@ -1,10 +1,9 @@
 #ifndef SEARCHSERVER_H
 #define SEARCHSERVER_H
 #include "converterjson.h"
-#include <map>
 #include "relativeindex.h"
 
-class SearchServer: public Skeleton
+class SearchServer
 {
 public:
     SearchServer(int maxThreads,
@@ -13,8 +12,7 @@ public:
 
     virtual ~SearchServer(){};
     std::shared_ptr<std::vector<RelativeIndex>> get_RelativeIndex();
-    void get_answers(int max_responses, const std::string &directory_file);
-protected:
+    bool get_answers(int max_responses, const std::string &directory_file = "./answers.json");
 
     // возможно захотим распарсить ссылки или есть другие требования
     // а может хотите искать константное слово, учитывая регистр и другие факторы
@@ -48,7 +46,7 @@ private:
     //вернет результат с таким же индексом соответствующим config_files_list
     std::shared_ptr<std::vector<std::map<size_t, size_t>>> get_result_files(const std::shared_ptr<const nlohmann::json> &config_files_list);
     std::shared_ptr<std::map<size_t, size_t>> get_result_requests(const std::shared_ptr<const nlohmann::json> &requests_list) ;
-    class Dictionary : public ConverterJSON
+    class Dictionary
     {
     public:
         Dictionary();
@@ -60,10 +58,11 @@ private:
         std::string at(size_t id)const;
 
     private:
+
         std::unordered_map<std::string, size_t> valueToID;
         std::unordered_map<size_t, std::string> idToValue;
         static size_t id;
-        const std::string dictionary = "./work/dictionary.json";
+        std::string directory = "./work/dictionary.json";
         bool saveToFile() const;
     };
     Dictionary dictionary;

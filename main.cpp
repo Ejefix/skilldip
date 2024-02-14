@@ -6,14 +6,19 @@
 
 int main(int argc, char *argv[])
 {
-    int maxThreads = -1; // Значение по умолчанию
+
     try {
 
-        ConverterJSON x{maxThreads};
-        x.set_filter_configJSON(true);
+        ConfigJSON x{};
         x.update();
-        SearchServer y{maxThreads,x.config_files_list, x.requests_list};
-        y.get_answers(x.get_max_responses(),x.answers_directory);
+        RequestsJSON y{};
+        y.update();
+
+        SearchServer z{0,x.list, y.list};
+        if(z.get_answers(x.get_max_responses()))
+            std::cout << "Search completed successfully\n";
+        else{std::cout << "Search completed, unable to find matches\n";}
+
         return 0;
     } catch (...) {
         std::cerr << "main error! \n";
