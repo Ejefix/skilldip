@@ -9,8 +9,7 @@ std::vector<std::pair<double,int>> times_;
 
 bool test_config(ConfigJSON &x,std::string directory_file)
 {
-
-    x.directory = directory_file;
+    x.set_directory( directory_file);
     x.update();
     if(x.list->empty())
     {
@@ -50,7 +49,7 @@ void test_timeRequests(std::string directory_file)
 {
     auto start = std::chrono::high_resolution_clock::now();
     ConfigJSON x{maxThreads};
-    x.directory = "./tests/file/config.json";
+    x.set_directory("./tests/file/config.json");
     x.update();
     RequestsJSON y{maxThreads};
     y.update();
@@ -69,15 +68,16 @@ int main(int argc, char **argv) {
 
     try {
 
-        while (test < 5){
+        while (test < 20){
 
             auto start = std::chrono::high_resolution_clock::now();
 
             if(test == 0){
                 ConfigJSON x{maxThreads};
                 RequestsJSON y{maxThreads};
-                y.directory = "./tests/file/requests.json";
-
+                y.set_directory("./tests/file/requesssts.json");
+                y.update();
+                y.set_directory("./tests/file/requests.json");
 
                 std::cout  << "test config start " << (!test_config(x, "./tests/file/config1.json") ? "test true " : "test false") << "\n\n";
                 std::cout  << "test config start " << (!test_config(x, "./tests/file/config2.json") ? "test true" : "test false")<< "\n\n";
@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
 
                 test_count(rel, "./tests/file/Biggers2.txt", "test2",300);
                 test_count(rel, "./tests/file/Biggers2.txt", "test",200);
-                test_count(rel, "./tests/file/Biggers2.txt", "test", 50);
+                test_count(rel, "./tests/file/Biggers2.txt", "test4", 50);
 
                 auto end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double, std::milli> duration = end - start;
@@ -117,8 +117,8 @@ int main(int argc, char **argv) {
                 std::cout << "wait, thread test " << maxThreads << '\n';
                 ConfigJSON x{maxThreads};
                 RequestsJSON y{maxThreads};
-                x.directory = "./tests/file/config4.json";
-                y.directory = "./tests/file/requests4.json";
+                x.set_directory("./tests/file/config4.json");
+                y.set_directory("./tests/file/requests4.json");
                 x.update();
                 y.update();
                 SearchServer z{maxThreads,x.list, y.list};

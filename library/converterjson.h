@@ -38,21 +38,20 @@ public:
     void set_filter(bool filter,int str_size );
     void set_filter(int str_size );
     void set_filter(bool filter);
-
+    void set_directory(std::string directory);
     std::shared_ptr<nlohmann::json> list;
-    std::string directory;
+
     static nlohmann::json reading_json(const std::string &directory_file,int maxThreads = 1, size_t max_sizeMB = 300)  ; // примрено 100 MB
     int maxThreads;
 protected:
-
+    std::string directory;
     size_t time_reading{1};
     int str_size{300};
     bool filter{true};
     bool settingsChanged{false};
-
     // удаляет элемент, если не std::string или длинна выше  str_size
     static void filter_files(std::shared_ptr<nlohmann::json> list,int str_size);
-
+private:
     // парсиниг от [0]->[1]-[2] ... , если отправили кривой буфер вернем пустой контейнер
     // буфер будет очищен
     static nlohmann::json parse_buffer(std::vector<std::string> &buffer) ;

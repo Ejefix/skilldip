@@ -244,6 +244,12 @@ void ConverterJSON::set_filter(bool filter)
     set_filter(str_size, filter);
 }
 
+void ConverterJSON::set_directory(std::string directory)
+{
+    this->directory = directory;
+    time_reading = 0;
+}
+
 nlohmann::json ConverterJSON::reading_json(const std::string &directory_file,int maxThreads, size_t max_sizeMB )
 {
     try {
@@ -332,7 +338,7 @@ bool ConfigJSON::control_config(const nlohmann::json &json_data, const std::stri
         }
         if (json_data["config"]["version"].get<std::string>() != version)
         {
-            throw std::runtime_error("version is incorrect");
+            throw std::runtime_error("version is incorrect -> " + json_data["config"]["version"].get<std::string>());
         }
         return true;
     }
