@@ -8,13 +8,14 @@
 #include <mutex>
 
 
+
+
+
+namespace {
 std::mutex mutex_cerr;
-
-
-const std::string main_project_version {PROJECT_VERSION};
+}
+const std::string main_project_version{PROJECT_VERSION};
 const std::string project_name{PROJECT_NAME};
-
-
 
 
 size_t Info_file::data_sec(const std::string &directory_file)
@@ -123,7 +124,6 @@ std::shared_ptr<std::vector<std::string>> ReadFile::readFile(const std::string &
 
 }
 
-
 void ReadFile::set_buffer(std::vector<std::string > &buffer,const size_t size_file,int maxThreads,size_t max_sizeMB)
 {
 
@@ -175,12 +175,21 @@ ConverterJSON::ConverterJSON():list{std::make_shared<nlohmann::json>()}{
 
 }
 
-void ConverterJSON::filter_files(std::shared_ptr<nlohmann::json> filter_list,int str_size)
+std::shared_ptr<nlohmann::json> ConverterJSON::get_list()
+{
+
+    parsing_list();
+    return list;
+}
+
+void ConfigJSON::filter_str(std::shared_ptr<nlohmann::json> filter_list,int str_size)
 {
     for (auto it = filter_list->begin(); it != filter_list->end(); )
     {
+
         if (!it->is_string() || it->get<std::string>().size() > str_size )
         {
+
             it = filter_list->erase(it);
         }
         else
@@ -221,40 +230,42 @@ nlohmann::json ConverterJSON::parse_buffer(std::vector<std::string> &buffer)
     return nlohmann::json{};
 }
 
-void ConverterJSON::set_filter(int str_size, bool filter)
-{
-    if (str_size > 5)
-        str_size = str_size;
-    filter = filter;
-    settingsChanged = true;
-}
 
-void ConverterJSON::set_filter(bool filter, int str_size)
-{
-    set_filter(str_size, filter);
-}
-
-void ConverterJSON::set_filter(int str_size)
-{
-    set_filter(str_size, filter);
-}
-
-void ConverterJSON::set_filter(bool filter)
-{
-    set_filter(str_size, filter);
-}
 
 void ConverterJSON::set_directory(std::string directory)
 {
     this->directory = directory;
-    time_reading = 0;
+    time_reading = 1;
+}
+
+bool ConverterJSON::update_list()
+{
+    try {
+        if (time_reading < Info_file::data_sec(directory) )
+        {
+            *list  = reading_json(directory, maxThreads);
+
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "error: " << e.what() << '\n';
+        list->clear();
+        return false;
+    }
+    catch (...) {
+        std::cerr << "error\n";
+        list->clear();
+        return false;
+    }
 }
 
 nlohmann::json ConverterJSON::reading_json(const std::string &directory_file,int maxThreads, size_t max_sizeMB )
 {
     try {
-
-
         const size_t size_file = Info_file::size(directory_file);
         if (max_sizeMB *1024*1024 < size_file )
         {
@@ -282,23 +293,23 @@ int ConfigJSON::get_max_responses()
     return max_responses;
 }
 
-bool ConfigJSON::reading_config()
+bool ConfigJSON::parsing_config()
 {
     try
-    {     
-        nlohmann::json json_data = reading_json(directory,maxThreads);
-        if (!control_config(json_data, main_project_version , project_name))
+    {
+
+        if (!control_config(main_project_version , project_name))
         {
             return false;
         }
-        if (!json_data.contains("files")  )
+        if (!list->contains("files")  )
         {
             std::cout << "list files config.json is empty";
             return false;
         }
-        if(json_data["config"]["max_responses"].is_number())
+        if ((*list)["config"]["max_responses"].is_number())
         {
-            max_responses = json_data["config"]["max_responses"].get<int>();
+            max_responses = (*list)["config"]["max_responses"].get<int>();
         }
         else
         {
@@ -308,7 +319,8 @@ bool ConfigJSON::reading_config()
             throw std::runtime_error("max_responses no correct");
 
         time_reading = Info_file::data_sec(directory);
-        *list = json_data["files"];
+        *list = (*list)["files"];
+        filter_str(list,300);
         return true;
     }
     catch (const std::exception& e) {
@@ -326,19 +338,19 @@ ConfigJSON::ConfigJSON(int maxThreads):ConverterJSON()
     directory = "./config.json";
 }
 
-bool ConfigJSON::control_config(const nlohmann::json &json_data, const std::string &version, const std::string &project_name)
+bool ConfigJSON::control_config( const std::string &version, const std::string &project_name)
 {
     try {
-        if (!json_data.contains("config")) {
+        if (!list->contains("config")) {
             throw std::runtime_error("Config section is missing in the file");
         }
-        if (json_data["config"]["name"].get<std::string>() !=  project_name)
+        if ((*list)["config"]["name"].get<std::string>() !=  project_name)
         {
             throw std::runtime_error("The project name specified in the file is incorrect.");
         }
-        if (json_data["config"]["version"].get<std::string>() != version)
+        if ((*list)["config"]["version"].get<std::string>() != version)
         {
-            throw std::runtime_error("version is incorrect -> " + json_data["config"]["version"].get<std::string>());
+            throw std::runtime_error("version is incorrect -> " + (*list)["config"]["version"].get<std::string>());
         }
         return true;
     }
@@ -352,49 +364,51 @@ bool ConfigJSON::control_config(const nlohmann::json &json_data, const std::stri
 
 }
 
-void ConfigJSON::update()
+void ConfigJSON::parsing_list()
 {
     try {
-        if (time_reading < Info_file::data_sec(directory) && reading_config())
-        {
-            if(filter)
-                filter_files(list,str_size);
-        }
-        else{
-            if(filter)
-                filter_files(list,str_size);
+        if(update_list()){
+            if(!control_config(main_project_version , project_name))
+            {
+                list->clear();
+                return ;
+            }
+            parsing_config();
         }
     }
     catch (const std::exception& e) {
 
         std::cerr << "error: " << e.what() << '\n';
+         list->clear();
 
     }
-    catch (...) {}
+    catch (...) {
+          list->clear();
+    }
 }
 
 //===================================================================================================================
 
-void RequestsJSON::update()
+void RequestsJSON::parsing_list()
 {
     try {
-        if (time_reading < Info_file::data_sec(directory) )
-        {
-            nlohmann::json list_ = reading_json(directory,maxThreads);
-            *list = list_["requests"];
-            if(filter)
-                filter_files(list,str_size);
-        }
-        else{
-            if(filter)
-                filter_files(list,str_size);
-        }
+          if(update_list())
+          {
+
+            *list = (*list)["requests"];
+
+          }
+
     }
     catch (const std::exception& e) {
         std::cerr << "error: " << e.what() << '\n';
-
+        list->clear();
     }
-    catch (...) {std::cerr << "error\n";}
+    catch (...) {
+
+        std::cerr << "error\n";
+         list->clear();
+        }
 }
 
 RequestsJSON::RequestsJSON(int maxThreads):ConverterJSON()

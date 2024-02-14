@@ -4,10 +4,10 @@
 #include <thread>
 
 namespace THReads {
-inline const unsigned int num_threads{std::thread::hardware_concurrency()};
-
+inline const unsigned int num_threads{
+                                      std::thread::hardware_concurrency() ?
+        std::thread::hardware_concurrency() : 1};
 }
-
 
 class Info_file final
 {
@@ -33,24 +33,20 @@ class ConverterJSON
 public:
     ConverterJSON();
     virtual ~ConverterJSON(){};
-    virtual void update() = 0;
-    void set_filter(int str_size ,bool filter);
-    void set_filter(bool filter,int str_size );
-    void set_filter(int str_size );
-    void set_filter(bool filter);
+
+    std::shared_ptr<nlohmann::json> get_list();
+    //void set_filter(int str_size );
     void set_directory(std::string directory);
-    std::shared_ptr<nlohmann::json> list;
 
     static nlohmann::json reading_json(const std::string &directory_file,int maxThreads = 1, size_t max_sizeMB = 300)  ; // примрено 100 MB
     int maxThreads;
 protected:
+    virtual void parsing_list() = 0;
+    bool update_list();
+    std::shared_ptr<nlohmann::json> list;
     std::string directory;
     size_t time_reading{1};
-    int str_size{300};
-    bool filter{true};
-    bool settingsChanged{false};
-    // удаляет элемент, если не std::string или длинна выше  str_size
-    static void filter_files(std::shared_ptr<nlohmann::json> list,int str_size);
+    bool filter{false};
 private:
     // парсиниг от [0]->[1]-[2] ... , если отправили кривой буфер вернем пустой контейнер
     // буфер будет очищен
@@ -64,14 +60,15 @@ public:
     // судя по тестам нету смысла больше 5
     ConfigJSON(int maxThreads = 1);
 
-    void update() override;
     int get_max_responses();
+    // удаляет элемент, если не std::string или длинна выше  str_size
+    static void filter_str(std::shared_ptr<nlohmann::json> list,int str_size);
 
 private:
-
+    void parsing_list() override;
     // контроль шапки
-    static bool control_config(const nlohmann::json &json_data,const std::string &version, const std::string &project_name);    
-    bool reading_config();
+    bool control_config(const std::string &version, const std::string &project_name);
+    bool parsing_config();
     int max_responses{};
 
 };
@@ -81,6 +78,8 @@ class RequestsJSON : public ConverterJSON
 public:
     // судя по тестам нету смысла больше 5
     RequestsJSON(int maxThreads = 1);
-    void update() override;
+private:
+
+    void parsing_list() override;
 };
 #endif // CONVERTERJSON_H

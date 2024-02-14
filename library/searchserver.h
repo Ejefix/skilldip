@@ -3,12 +3,33 @@
 #include "converterjson.h"
 #include "relativeindex.h"
 
+
+class Dictionary
+{
+public:
+    Dictionary();
+    ~Dictionary();
+    // потоко безопастно
+    bool insert(const std::string &value);
+
+    size_t at(const std::string &value)const;
+    std::string at(size_t id)const;
+
+private:
+
+    std::unordered_map<std::string, size_t> valueToID;
+    std::unordered_map<size_t, std::string> idToValue;
+    static size_t id;
+    std::string directory = "./work/dictionary.json";
+    bool saveToFile() const;
+};
+
+
 class SearchServer
 {
 public:
-    SearchServer(int maxThreads,
-                 const std::shared_ptr<const nlohmann::json>& config_files_list,
-                 const std::shared_ptr<const nlohmann::json>& requests_list);
+    SearchServer(const std::shared_ptr<const nlohmann::json>& config_files_list,
+                 const std::shared_ptr<const nlohmann::json>& requests_list,int maxThreads = 0);
 
     virtual ~SearchServer(){};
     std::shared_ptr<std::vector<RelativeIndex>> get_RelativeIndex();
@@ -46,25 +67,7 @@ private:
     //вернет результат с таким же индексом соответствующим config_files_list
     std::shared_ptr<std::vector<std::map<size_t, size_t>>> get_result_files(const std::shared_ptr<const nlohmann::json> &config_files_list);
     std::shared_ptr<std::map<size_t, size_t>> get_result_requests(const std::shared_ptr<const nlohmann::json> &requests_list) ;
-    class Dictionary
-    {
-    public:
-        Dictionary();
-        ~Dictionary();
-        // потоко безопастно
-        bool insert(const std::string &value);
 
-        size_t at(const std::string &value)const;
-        std::string at(size_t id)const;
-
-    private:
-
-        std::unordered_map<std::string, size_t> valueToID;
-        std::unordered_map<size_t, std::string> idToValue;
-        static size_t id;
-        std::string directory = "./work/dictionary.json";
-        bool saveToFile() const;
-    };
     Dictionary dictionary;
 };
 

@@ -4,12 +4,114 @@
 #include <fstream>
 #include <functional>
 #include <condition_variable>
+namespace {
 std::mutex insert_lock;
 std::mutex mutex_cerr_;
+}
 
-SearchServer::SearchServer(int maxThreads,
-                           const std::shared_ptr<const nlohmann::json>& config_files_list,
-                           const std::shared_ptr<const nlohmann::json>& requests_list)
+
+size_t Dictionary::id = 1;
+
+Dictionary::Dictionary()
+{
+
+    try {
+
+        if(!std::filesystem::exists("./work"))
+        {
+            std::filesystem::create_directories("./work");
+
+        }
+        auto json = ConverterJSON::reading_json(directory);
+        for (const auto& item : json.items())
+        {
+            std::string key = item.key();
+            size_t value = item.value();
+            valueToID[key] = value;
+            idToValue[value] = key;
+        }
+    }
+    catch (const std::exception& e) {
+        std::lock_guard<std::mutex> lock( mutex_cerr_);
+        std::cerr << "error: reading_json: " << e.what() << '\n';
+    }
+    catch (...) {
+        std::lock_guard<std::mutex> lock( mutex_cerr_);
+        std::cerr << "error: reading_json: "  << '\n';
+    }
+}
+
+Dictionary::~Dictionary()
+{
+    saveToFile();
+}
+
+bool Dictionary::insert(const std::string &value)
+{
+    std::lock_guard<std::mutex> lock(insert_lock);
+
+    if (valueToID.find(value) != valueToID.end())
+    {
+        return false;
+    }
+
+    while (idToValue.find(id) != idToValue.end()) {
+        ++id;
+    }
+    valueToID[value] = id;
+    idToValue[id] = value;
+    ++id;
+    return true;
+}
+
+size_t Dictionary::at(const std::string &value)const
+{
+    return valueToID.at(value);
+}
+
+std::string Dictionary::at(size_t id)const
+{
+    return idToValue.at(id);
+}
+
+bool Dictionary::saveToFile() const
+{
+
+    nlohmann::json js;
+    for (const auto& [value, id] : valueToID) {
+        js[value] = id;
+    }
+    std::ofstream file(directory);
+    if (!file.is_open()) {
+        std::cerr << "File creation error " << directory << '\n';
+        return false;
+    }
+    file << js;
+    file.close();
+    return true;
+}
+
+bool SearchServer::saveToFile(const std::string &directory_file, const std::map<size_t, size_t> &map) const
+{
+    nlohmann::json js;
+    for (const auto& [value, counter] : map) {
+        std::string j = std::to_string(value);
+        js[j] = counter;
+    }
+    std::ofstream file(directory_file);
+    if (!file.is_open()) {
+        std::cerr << "File creation error " << directory_file << '\n';
+        return false;
+    }
+    file << js;
+    file.close();
+    return true;
+}
+
+
+
+SearchServer::SearchServer(const std::shared_ptr<const nlohmann::json>& config_files_list,
+                           const std::shared_ptr<const nlohmann::json>& requests_list,int maxThreads)
     :config_files_list{config_files_list},requests_list{requests_list},
     relativeIndex{std::make_shared<std::vector<RelativeIndex>>()}
 {
@@ -332,103 +434,4 @@ std::vector<std::string> SearchServer::transformation(std::string &word) const
     return std::vector<std::string> {};
 }
 
-
-size_t SearchServer::Dictionary::id = 1;
-
-SearchServer::Dictionary::Dictionary()
-{
-
-    try {
-
-        if(!std::filesystem::exists("./work"))
-        {
-            std::filesystem::create_directories("./work");
-
-        }
-        auto json = ConverterJSON::reading_json(directory);
-       for (const auto& item : json.items())
-        {
-            std::string key = item.key();
-            size_t value = item.value();
-            valueToID[key] = value;
-            idToValue[value] = key;
-       }
-    }
-    catch (const std::exception& e) {
-        std::lock_guard<std::mutex> lock( mutex_cerr_);
-        std::cerr << "error: reading_json: " << e.what() << '\n';
-    }
-    catch (...) {
-        std::lock_guard<std::mutex> lock( mutex_cerr_);
-        std::cerr << "error: reading_json: "  << '\n';
-    }
-}
-
-SearchServer::Dictionary::~Dictionary()
-{
-    saveToFile();    
-}
-
-bool SearchServer::Dictionary::insert(const std::string &value)
-{
-    std::lock_guard<std::mutex> lock(insert_lock);
-
-    if (valueToID.find(value) != valueToID.end())
-    {
-         return false;
-    }
-
-    while (idToValue.find(id) != idToValue.end()) {
-         ++id;
-    }
-    valueToID[value] = id;
-    idToValue[id] = value;
-    ++id;
-    return true;
-}
-
-size_t SearchServer::Dictionary::at(const std::string &value)const
-{
-    return valueToID.at(value);
-}
-
-std::string SearchServer::Dictionary::at(size_t id)const
-{
-    return idToValue.at(id);
-}
-
-
-bool SearchServer::Dictionary::saveToFile() const
-{
-
-    nlohmann::json js;
-    for (const auto& [value, id] : valueToID) {
-         js[value] = id;
-    }
-    std::ofstream file(directory.c_str());
-    if (!file.is_open()) {
-         std::cerr << "File creation error " << directory << '\n';
-         return false;
-    }
-    file << js;
-    file.close();
-    return true;
-}
-
-bool SearchServer::saveToFile(const std::string &directory_file, const std::map<size_t, size_t> &map) const
-{
-    nlohmann::json js;
-    for (const auto& [value, counter] : map) {
-         std::string j = std::to_string(value);
-         js[j] = counter;
-    }
-    std::ofstream file(directory_file.c_str());
-    if (!file.is_open()) {
-         std::cerr << "File creation error " << directory_file << '\n';
-         return false;
-    }
-    file << js;
-    file.close();
-    return true;
-}
 
