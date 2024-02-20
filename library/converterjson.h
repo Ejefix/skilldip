@@ -31,34 +31,28 @@ private:
 class ConverterJSON
 {
 public:
-    ConverterJSON();
+
     virtual ~ConverterJSON(){};
 
     std::shared_ptr<nlohmann::json> get_list();
-    //void set_filter(int str_size );
     void set_directory(std::string directory);
+    static nlohmann::json reading_json(const std::string &directory_file, size_t max_sizeMB = 100)  ; // примрено 100 MB
 
-    static nlohmann::json reading_json(const std::string &directory_file,int maxThreads = 1, size_t max_sizeMB = 300)  ; // примрено 100 MB
-    int maxThreads;
 protected:
     virtual void parsing_list() = 0;
     bool update_list();
     std::shared_ptr<nlohmann::json> list;
     std::string directory;
-    size_t time_reading{1};
-    bool filter{false};
 private:
-    // парсиниг от [0]->[1]-[2] ... , если отправили кривой буфер вернем пустой контейнер
-    // буфер будет очищен
-    static nlohmann::json parse_buffer(std::vector<std::string> &buffer) ;
+    size_t time_reading{1};
 
 };
 
 class ConfigJSON : public ConverterJSON
 {
 public:
-    // судя по тестам нету смысла больше 5
-    ConfigJSON(int maxThreads = 1);
+
+    ConfigJSON();
 
     int get_max_responses();
     // удаляет элемент, если не std::string или длинна выше  str_size
@@ -76,8 +70,8 @@ private:
 class RequestsJSON : public ConverterJSON
 {
 public:
-    // судя по тестам нету смысла больше 5
-    RequestsJSON(int maxThreads = 1);
+
+    RequestsJSON();
 private:
 
     void parsing_list() override;

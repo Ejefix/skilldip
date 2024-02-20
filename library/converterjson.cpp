@@ -170,11 +170,6 @@ void ReadFile::readFileToBuffer(const std::string &directory_file, char *buffer,
 
 //===================================================================================================================
 
-ConverterJSON::ConverterJSON():list{std::make_shared<nlohmann::json>()}{
-
-
-}
-
 std::shared_ptr<nlohmann::json> ConverterJSON::get_list()
 {
 
@@ -199,36 +194,36 @@ void ConfigJSON::filter_str(std::shared_ptr<nlohmann::json> filter_list,int str_
     }
 }
 
-nlohmann::json ConverterJSON::parse_buffer(std::vector<std::string> &buffer)
-{
-    std::string json_string;
-    try {
+//nlohmann::json ConverterJSON::parse_buffer(std::vector<std::string> &buffer)
+//{
+//    std::string json_string;
+//    try {
 
-        nlohmann::json obj_array;
-        size_t res{};
-        for (const std::string& str : buffer)
-            res += str.size();
-        json_string.reserve(res);
-        int size = buffer.size();
-        for (int i{}; i <size;++i ) {
+//        nlohmann::json obj_array;
+//        size_t res{};
+//        for (const std::string& str : buffer)
+//            res += str.size();
+//        json_string.reserve(res);
+//        int size = buffer.size();
+//        for (int i{}; i <size;++i ) {
 
-            json_string += buffer[i];
-            buffer[i].clear();
+//            json_string += buffer[i];
+//            buffer[i].clear();
 
-        }
-        obj_array = nlohmann::json::parse(json_string);
-        buffer.clear();
-        return obj_array;
-    } catch (const nlohmann::json::parse_error& e) {
-        std::cerr << "JSON parsing error: \n" << e.what() << '\n';
-        buffer.clear();
-    }
-    catch (...) {
-        std::cerr << "JSON parsing error: \n" << '\n';
-        buffer.clear();
-    }
-    return nlohmann::json{};
-}
+//        }
+//        obj_array = nlohmann::json::parse(json_string);
+//        buffer.clear();
+//        return obj_array;
+//    } catch (const nlohmann::json::parse_error& e) {
+//        std::cerr << "JSON parsing error: \n" << e.what() << '\n';
+//        buffer.clear();
+//    }
+//    catch (...) {
+//        std::cerr << "JSON parsing error: \n" << '\n';
+//        buffer.clear();
+//    }
+//    return nlohmann::json{};
+//}
 
 
 
@@ -243,8 +238,8 @@ bool ConverterJSON::update_list()
     try {
         if (time_reading < Info_file::data_sec(directory) )
         {
-            *list  = reading_json(directory, maxThreads);
-
+            time_reading = Info_file::data_sec(directory);
+            list = std::make_shared<nlohmann::json>(reading_json(directory));
             return true;
         }
         else{
@@ -263,7 +258,7 @@ bool ConverterJSON::update_list()
     }
 }
 
-nlohmann::json ConverterJSON::reading_json(const std::string &directory_file,int maxThreads, size_t max_sizeMB )
+nlohmann::json ConverterJSON::reading_json(const std::string &directory_file, size_t max_sizeMB )
 {
     try {
         const size_t size_file = Info_file::size(directory_file);
@@ -271,9 +266,13 @@ nlohmann::json ConverterJSON::reading_json(const std::string &directory_file,int
         {
             throw std::runtime_error("File size > " + std::to_string(size_file / 1024 / 1024) + " MB in " + directory_file);
         }
-        auto buffer = std::make_shared<std::vector<std::string>>();
-        buffer = ReadFile::readFile(directory_file,maxThreads,max_sizeMB);
-        return parse_buffer(*buffer);
+
+         nlohmann::json json;
+         std::ifstream file(directory_file);
+        if (file.is_open()) {
+            file >> json;
+        }
+        return json;
     }
     catch (const std::exception& e) {
 
@@ -317,8 +316,6 @@ bool ConfigJSON::parsing_config()
         }
         if (max_responses < 1)
             throw std::runtime_error("max_responses no correct");
-
-        time_reading = Info_file::data_sec(directory);
         *list = (*list)["files"];
         filter_str(list,300);
         return true;
@@ -332,9 +329,9 @@ bool ConfigJSON::parsing_config()
     return false;
 }
 
-ConfigJSON::ConfigJSON(int maxThreads):ConverterJSON()
+ConfigJSON::ConfigJSON():ConverterJSON()
 {
-    this->maxThreads =  maxThreads;
+
     directory = "./config.json";
 }
 
@@ -411,9 +408,8 @@ void RequestsJSON::parsing_list()
         }
 }
 
-RequestsJSON::RequestsJSON(int maxThreads):ConverterJSON()
+RequestsJSON::RequestsJSON():ConverterJSON()
 {
-    this->maxThreads =  maxThreads;
     directory = "./requests.json";
 }
 

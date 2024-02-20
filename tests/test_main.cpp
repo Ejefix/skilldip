@@ -47,9 +47,9 @@ void test_count(std::shared_ptr<std::vector<RelativeIndex>> rel, std::string dir
 void test_timeRequests(std::string directory_file)
 {
     auto start = std::chrono::high_resolution_clock::now();
-    ConfigJSON x{maxThreads};
+    ConfigJSON x{};
     x.set_directory("./tests/file/config.json");
-    RequestsJSON y{maxThreads};
+    RequestsJSON y{};
 
     SearchServer z{x.get_list(), y.get_list(),maxThreads};
     auto rel = z.get_RelativeIndex();
@@ -68,8 +68,8 @@ int main(int argc, char **argv) {
             auto start = std::chrono::high_resolution_clock::now();
 
             if(test == 0){
-                ConfigJSON x{maxThreads};
-                RequestsJSON y{maxThreads};
+                ConfigJSON x{};
+                RequestsJSON y{};
                 y.set_directory("./tests/file/requesssts.json");
                 y.set_directory("./tests/file/requests.json");
 
@@ -108,8 +108,8 @@ int main(int argc, char **argv) {
             else
             {
                 std::cout << "wait, thread test " << maxThreads << '\n';
-                ConfigJSON x{maxThreads};
-                RequestsJSON y{maxThreads};
+                ConfigJSON x{};
+                RequestsJSON y{};
                 x.set_directory("./tests/file/config4.json");
                 y.set_directory("./tests/file/requests4.json");
 

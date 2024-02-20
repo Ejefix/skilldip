@@ -14,14 +14,16 @@ public:
 
     size_t at(const std::string &value)const;
     std::string at(size_t id)const;
+    bool saveToFile() const;
 
 private:
-
+    void push (const std::string &str,size_t id);
     std::unordered_map<std::string, size_t> valueToID;
     std::unordered_map<size_t, std::string> idToValue;
+
     static size_t id;
     std::string directory = "./work/dictionary.json";
-    bool saveToFile() const;
+
 };
 
 

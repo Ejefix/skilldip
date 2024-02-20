@@ -25,10 +25,9 @@ Dictionary::Dictionary()
         auto json = ConverterJSON::reading_json(directory);
         for (const auto& item : json.items())
         {
-            std::string key = item.key();
+            std::string str = item.key();
             size_t value = item.value();
-            valueToID[key] = value;
-            idToValue[value] = key;
+            push(str, value);
         }
     }
     catch (const std::exception& e) {
@@ -46,11 +45,11 @@ Dictionary::~Dictionary()
     saveToFile();
 }
 
-bool Dictionary::insert(const std::string &value)
+bool Dictionary::insert(const std::string &str)
 {
     std::lock_guard<std::mutex> lock(insert_lock);
 
-    if (valueToID.find(value) != valueToID.end())
+    if (valueToID.find(str) != valueToID.end())
     {
         return false;
     }
@@ -58,8 +57,7 @@ bool Dictionary::insert(const std::string &value)
     while (idToValue.find(id) != idToValue.end()) {
         ++id;
     }
-    valueToID[value] = id;
-    idToValue[id] = value;
+    push(str, id);
     ++id;
     return true;
 }
@@ -72,6 +70,16 @@ size_t Dictionary::at(const std::string &value)const
 std::string Dictionary::at(size_t id)const
 {
     return idToValue.at(id);
+}
+
+void Dictionary::push(const std::string &str, size_t value)
+{
+
+
+    valueToID[str] = value;
+    idToValue[value] = str;
+    if (value > id)
+        id = value;
 }
 
 bool Dictionary::saveToFile() const
