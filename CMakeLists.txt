@@ -33,8 +33,29 @@ file(COPY requests.json DESTINATION ${CMAKE_BINARY_DIR})
 
 option(BUILD_TESTS "Build the tests" ON)
 if(BUILD_TESTS)
+    enable_testing()
+
     add_executable(DiplomTests tests/test_main.cpp)
     file(COPY tests/file DESTINATION ${CMAKE_BINARY_DIR}/tests)
     target_link_libraries(DiplomTests PRIVATE LibDiplom nlohmann_json::nlohmann_json)
     target_include_directories(DiplomTests PRIVATE ${CMAKE_BINARY_DIR})
+
+    FetchContent_Declare(
+      googletest
+      URL https://github.com/google/googletest/archive/refs/heads/main.zip
+    )
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+    add_executable(GTests tests.cpp)
+    target_link_libraries(GTests gtest_main LibDiplom)
+    target_include_directories(GTests PRIVATE ${CMAKE_BINARY_DIR})
+
+    include(GoogleTest)
+    gtest_discover_tests(GTests)
+
 endif()
+
+
+
+

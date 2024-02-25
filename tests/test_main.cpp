@@ -50,7 +50,7 @@ void test_timeRequests(std::string directory_file)
     ConfigJSON x{};
     x.set_directory("./tests/file/config.json");
     RequestsJSON y{};
-
+    y.set_directory(directory_file);
     SearchServer z{x.get_list(), y.get_list(),maxThreads};
     auto rel = z.get_RelativeIndex();
 

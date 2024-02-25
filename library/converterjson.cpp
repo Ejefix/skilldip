@@ -194,38 +194,6 @@ void ConfigJSON::filter_str(std::shared_ptr<nlohmann::json> filter_list,int str_
     }
 }
 
-//nlohmann::json ConverterJSON::parse_buffer(std::vector<std::string> &buffer)
-//{
-//    std::string json_string;
-//    try {
-
-//        nlohmann::json obj_array;
-//        size_t res{};
-//        for (const std::string& str : buffer)
-//            res += str.size();
-//        json_string.reserve(res);
-//        int size = buffer.size();
-//        for (int i{}; i <size;++i ) {
-
-//            json_string += buffer[i];
-//            buffer[i].clear();
-
-//        }
-//        obj_array = nlohmann::json::parse(json_string);
-//        buffer.clear();
-//        return obj_array;
-//    } catch (const nlohmann::json::parse_error& e) {
-//        std::cerr << "JSON parsing error: \n" << e.what() << '\n';
-//        buffer.clear();
-//    }
-//    catch (...) {
-//        std::cerr << "JSON parsing error: \n" << '\n';
-//        buffer.clear();
-//    }
-//    return nlohmann::json{};
-//}
-
-
 
 void ConverterJSON::set_directory(std::string directory)
 {

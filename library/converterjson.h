@@ -8,6 +8,7 @@ inline const unsigned int num_threads{
                                       std::thread::hardware_concurrency() ?
         std::thread::hardware_concurrency() : 1};
 }
+struct Entry;
 
 class Info_file final
 {
@@ -33,6 +34,10 @@ class ConverterJSON
 public:
 
     virtual ~ConverterJSON(){};
+    friend void TestInvertedIndexFunctionality(
+        const std::vector<std::string>& docs,
+        const std::vector<std::string>& requests,
+        const std::vector<std::vector<Entry>>& expected );
 
     std::shared_ptr<nlohmann::json> get_list();
     void set_directory(std::string directory);
@@ -46,6 +51,7 @@ protected:
 private:
     size_t time_reading{1};
 
+
 };
 
 class ConfigJSON : public ConverterJSON
@@ -53,6 +59,8 @@ class ConfigJSON : public ConverterJSON
 public:
 
     ConfigJSON();
+
+
 
     int get_max_responses();
     // удаляет элемент, если не std::string или длинна выше  str_size
@@ -72,6 +80,7 @@ class RequestsJSON : public ConverterJSON
 public:
 
     RequestsJSON();
+
 private:
 
     void parsing_list() override;

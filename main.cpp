@@ -3,16 +3,15 @@
 #include "searchserver.h"
 
 
-
 int main(int argc, char *argv[])
 {
+
 
     try {
 
         ConfigJSON x{};
 
         RequestsJSON y{};
-
 
         SearchServer z{x.get_list(), y.get_list()};
 

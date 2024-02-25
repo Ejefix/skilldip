@@ -179,8 +179,8 @@ std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
         }
         ++i;
     }
-    std::sort(relativeIndex->begin(), relativeIndex->end(),[](RelativeIndex lhs, RelativeIndex rhs){
-        return lhs.get_Relative_Relevancy() > rhs.get_Relative_Relevancy();});
+
+
     return relativeIndex;
 }
 
@@ -188,6 +188,8 @@ bool SearchServer::get_answers(int max_responses,const std::string &directory_fi
 {
     bool ok{true};
     auto rel = get_RelativeIndex();
+    std::sort(rel->begin(), rel->end(),[](RelativeIndex lhs, RelativeIndex rhs){
+        return lhs.get_Relative_Relevancy() > rhs.get_Relative_Relevancy();});
 
     auto it = rel->begin();
 
@@ -303,7 +305,7 @@ std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_
                     ++counter;
                 }
                 auto it = rezult->begin() + i ;
-                auto buffer =  ReadFile::readFile(files_list[i],1,300);
+                auto buffer =  ReadFile::readFile(files_list[i]);
                 *it = parse_buffer(buffer);
                 if(!it->empty())
                 {
