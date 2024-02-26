@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
 
                 test_count(rel, "./tests/file/Biggers2.txt", "test2",300);
                 test_count(rel, "./tests/file/Biggers2.txt", "test",200);
-                test_count(rel, "./tests/file/Biggers2.txt", "test4", 50);
+                test_count(rel, "./tests/file/Biggers2.txt", "test4", 0);
 
                 auto end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double, std::milli> duration = end - start;

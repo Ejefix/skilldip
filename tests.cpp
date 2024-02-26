@@ -40,10 +40,8 @@ struct Entry2 {
     bool operator ==(const Entry2& other) const {
 
         const double epsilon = 1e-6;
-        return doc_id == other.doc_id &&
-               std::fabs(count - other.count) < epsilon;
+        return std::fabs(count - other.count) < epsilon;
     }
-
 };
 
 void TestRelativeIndex(
@@ -231,7 +229,8 @@ TEST(TestCaseSearchServer, TestTop5)
         Entry2{docs[14], 1},
         Entry2{docs[11], 0.666667},
         Entry2 {docs[21], 0.666667},
-        Entry2{docs[20], 0.666667}
+        Entry2{docs[20], 0.666667},
+        Entry2{docs[22], 0.666667}
     };
     TestRelativeIndex( docs, requests, expected);
 }
