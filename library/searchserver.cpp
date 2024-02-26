@@ -4,6 +4,9 @@
 #include <fstream>
 #include <functional>
 #include <condition_variable>
+#include <sstream>
+#include "readfile.h"
+
 namespace {
 std::mutex insert_lock;
 std::mutex mutex_cerr_;
@@ -442,5 +445,3 @@ std::vector<std::string> SearchServer::transformation(std::string &word) const
     }
     return std::vector<std::string> {};
 }
-
-

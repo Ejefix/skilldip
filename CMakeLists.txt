@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.11)
 project(Diplom LANGUAGES CXX VERSION 1.0.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 include(FetchContent)
 FetchContent_Declare(json
   URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
@@ -27,16 +28,26 @@ install(TARGETS Diplom DESTINATION bin)
 
 install(FILES ${CMAKE_SOURCE_DIR}/config.json DESTINATION bin)
 install(FILES ${CMAKE_SOURCE_DIR}/requests.json DESTINATION bin)
-file(COPY config.json DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY requests.json DESTINATION ${CMAKE_BINARY_DIR})
 
+add_custom_command(TARGET Diplom POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/config.json
+            $<TARGET_FILE_DIR:Diplom>)
+add_custom_command(TARGET Diplom POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/requests.json
+            $<TARGET_FILE_DIR:Diplom>)
 
 option(BUILD_TESTS "Build the tests" ON)
 if(BUILD_TESTS)
     enable_testing()
 
     add_executable(DiplomTests tests/test_main.cpp)
-    file(COPY tests/file DESTINATION ${CMAKE_BINARY_DIR}/tests)
+    add_custom_command(TARGET DiplomTests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_SOURCE_DIR}/tests/file
+                $<TARGET_FILE_DIR:DiplomTests>/tests/file)
+
     target_link_libraries(DiplomTests PRIVATE LibDiplom )
     target_include_directories(DiplomTests PRIVATE ${CMAKE_BINARY_DIR})
 

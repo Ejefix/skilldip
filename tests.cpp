@@ -107,7 +107,7 @@ void TestInvertedIndexFunctionality(
     ASSERT_EQ(result, expected);
 }
 
-TEST(InvertedIndexTest, Functionality) {
+TEST(TestCaseInvertedIndex, Functionality) {
 
 
     std::vector<std::string>  docs = {"./tests/file/test1.txt",
@@ -191,7 +191,6 @@ TEST(TestCaseSearchServer, TestSimple)
     TestRelativeIndex( docs, requests, expected);
 
 }
-
 TEST(TestCaseSearchServer, TestTop5)
 {
 

@@ -10,6 +10,7 @@ inline const unsigned int num_threads{
 }
 struct Entry;
 struct Entry2;
+
 class Info_file final
 {
 public:
@@ -18,16 +19,6 @@ public:
 
 };
 
-class ReadFile  final
-{
-public:
-    // функция читает файл бинарно и заполняет std::vector buffer от [0]->[1]->[2]->...
-    static std::shared_ptr<std::vector<std::string>> readFile(const std::string &directory_file,int maxThreads = 1 ,  size_t max_sizeMB = 300);
-private:
-    // может включить дополнительные потоки для чтения
-    static void set_buffer(std::vector<std::string> &buffer,const size_t size_file, int maxThreads , size_t max_sizeMB ) ;
-    static  void readFileToBuffer(const std::string &directory_file ,char *buffer,int start,int stop);
-};
 
 class ConverterJSON
 {
@@ -40,9 +31,10 @@ public:
         const std::vector<std::string>& docs,
         const std::vector<std::string>& requests,
         const std::vector<std::vector<Entry>>& expected );
-    friend void TestRelativeIndex(    const std::vector<std::string>& docs,
-                                  const std::vector<std::string>& requests,
-                                  const std::vector<Entry2> &expected);
+    friend void TestRelativeIndex(
+        const std::vector<std::string>& docs,
+        const std::vector<std::string>& requests,
+        const std::vector<Entry2> &expected);
 
     std::shared_ptr<nlohmann::json> get_list();
     void set_directory(std::string directory);
