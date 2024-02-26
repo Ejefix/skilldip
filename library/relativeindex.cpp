@@ -1,6 +1,6 @@
 #include "relativeindex.h"
 #include <iostream>
-size_t RelativeIndex::max_relative{};
+size_t RelativeIndex::max_relative = 0;
 
 RelativeIndex::RelativeIndex(const std::string &directory_file,
                              const std::vector<std::pair< std::string,  size_t> > &result):
@@ -10,9 +10,12 @@ RelativeIndex::RelativeIndex(const std::string &directory_file,
     {
         relative += j.second;
     }
-    if(relative > max_relative)
-        max_relative = relative;
 
+
+    if(relative >  RelativeIndex::max_relative)
+    {
+        RelativeIndex::max_relative = relative;
+    }
 }
 
 double RelativeIndex::get_relative()

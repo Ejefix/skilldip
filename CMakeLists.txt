@@ -18,8 +18,8 @@ add_executable(Diplom
 
 configure_file(version.h.in version_main.h)
 
-target_link_libraries(Diplom PRIVATE LibDiplom nlohmann_json::nlohmann_json)
-target_include_directories(LibDiplom PRIVATE ${CMAKE_BINARY_DIR})
+target_link_libraries(Diplom PRIVATE LibDiplom )
+target_include_directories(LibDiplom PRIVATE ${CMAKE_BINARY_DIR} nlohmann_json::nlohmann_json)
 target_include_directories(Diplom PRIVATE ${CMAKE_BINARY_DIR})
 
 
@@ -37,7 +37,7 @@ if(BUILD_TESTS)
 
     add_executable(DiplomTests tests/test_main.cpp)
     file(COPY tests/file DESTINATION ${CMAKE_BINARY_DIR}/tests)
-    target_link_libraries(DiplomTests PRIVATE LibDiplom nlohmann_json::nlohmann_json)
+    target_link_libraries(DiplomTests PRIVATE LibDiplom )
     target_include_directories(DiplomTests PRIVATE ${CMAKE_BINARY_DIR})
 
     FetchContent_Declare(

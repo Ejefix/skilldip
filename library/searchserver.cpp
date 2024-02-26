@@ -133,6 +133,7 @@ SearchServer::SearchServer(const std::shared_ptr<const nlohmann::json>& config_f
         std::filesystem::create_directories("./work");
 
     }
+     RelativeIndex::max_relative = 0;
 }
 
 std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
@@ -150,6 +151,8 @@ std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
     auto result_files = get_result_files(config_files_list);
     size_t i{};
     auto result_requests = get_result_requests(requests_list);
+
+
     for(auto &result : *result_files)
     {
         auto it = config_files_list->begin()+i;
@@ -436,7 +439,7 @@ std::vector<std::string> SearchServer::transformation(std::string &word) const
     std::transform(word.begin(), word.end(), word.begin(), [](unsigned char c) {
         return std::tolower(c);
     });
-    if (word.size() > 1)
+    if (word.size() > 0)
     {
         std::vector<std::string> words{word};
         return words;

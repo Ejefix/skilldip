@@ -9,7 +9,7 @@ inline const unsigned int num_threads{
         std::thread::hardware_concurrency() : 1};
 }
 struct Entry;
-
+struct Entry2;
 class Info_file final
 {
 public:
@@ -34,10 +34,15 @@ class ConverterJSON
 public:
 
     virtual ~ConverterJSON(){};
+
+    //TEST
     friend void TestInvertedIndexFunctionality(
         const std::vector<std::string>& docs,
         const std::vector<std::string>& requests,
         const std::vector<std::vector<Entry>>& expected );
+    friend void TestRelativeIndex(    const std::vector<std::string>& docs,
+                                  const std::vector<std::string>& requests,
+                                  const std::vector<Entry2> &expected);
 
     std::shared_ptr<nlohmann::json> get_list();
     void set_directory(std::string directory);

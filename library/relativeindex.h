@@ -17,12 +17,12 @@ public:
     double get_Relative_Relevancy();
     std::string get_directory_file();
     std::vector<std::pair<std::string, size_t>> get_result();
-
+    static size_t max_relative;
 private:
     std::string directory_file;
     std::vector<std::pair<std::string, size_t>> result{};
     double relative{};
-    static size_t max_relative;
+
 };
 
 #endif // RELATIVEINDEX_H
