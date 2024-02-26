@@ -50,7 +50,6 @@ if(BUILD_TESTS)
     add_executable(GTests tests.cpp)
     target_link_libraries(GTests gtest_main LibDiplom)
     target_include_directories(GTests PRIVATE ${CMAKE_BINARY_DIR})
-
     include(GoogleTest)
     gtest_discover_tests(GTests)
 

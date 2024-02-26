@@ -43,8 +43,7 @@ std::shared_ptr<std::vector<std::string>> ReadFile::readFile(const std::string &
     try {
         if (maxThreads < 1 || maxThreads > THReads::num_threads)
             maxThreads = THReads::num_threads;
-        if (max_sizeMB < 300)
-            max_sizeMB = 300;
+
         size_t size_file = Info_file::size(directory_file);
         const auto buffer = std::make_shared<std::vector<std::string>>();
 
@@ -130,15 +129,11 @@ void ReadFile::set_buffer(std::vector<std::string > &buffer,const size_t size_fi
     size_t numReadThreads = 1;
 
     numReadThreads = size_file / (max_sizeMB*1024*1024);
-
-
     if (numReadThreads > maxThreads )
         numReadThreads =  maxThreads;
     if (numReadThreads < 1) {
         numReadThreads = 1;
     }
-
-
     size_t resize_string = size_file / numReadThreads;
     size_t remainder = size_file % numReadThreads;
 
@@ -181,10 +176,8 @@ void ConfigJSON::filter_str(std::shared_ptr<nlohmann::json> filter_list,int str_
 {
     for (auto it = filter_list->begin(); it != filter_list->end(); )
     {
-
         if (!it->is_string() || it->get<std::string>().size() > str_size )
         {
-
             it = filter_list->erase(it);
         }
         else

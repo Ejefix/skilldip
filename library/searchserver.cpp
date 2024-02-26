@@ -74,8 +74,6 @@ std::string Dictionary::at(size_t id)const
 
 void Dictionary::push(const std::string &str, size_t value)
 {
-
-
     valueToID[str] = value;
     idToValue[value] = str;
     if (value > id)
@@ -133,7 +131,7 @@ SearchServer::SearchServer(const std::shared_ptr<const nlohmann::json>& config_f
         std::filesystem::create_directories("./work");
 
     }
-     RelativeIndex::max_relative = 0;
+    RelativeIndex::max_relative = 0;
 }
 
 std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
@@ -182,8 +180,6 @@ std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
         }
         ++i;
     }
-
-
     return relativeIndex;
 }
 

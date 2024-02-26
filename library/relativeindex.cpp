@@ -10,8 +10,6 @@ RelativeIndex::RelativeIndex(const std::string &directory_file,
     {
         relative += j.second;
     }
-
-
     if(relative >  RelativeIndex::max_relative)
     {
         RelativeIndex::max_relative = relative;

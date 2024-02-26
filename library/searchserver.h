@@ -4,7 +4,7 @@
 #include "relativeindex.h"
 
 
-class Dictionary
+class Dictionary final
 {
 public:
     Dictionary();

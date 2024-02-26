@@ -6,7 +6,7 @@
 
 
 
-class RelativeIndex
+class RelativeIndex final
 {
 public:
     RelativeIndex(const std::string &directory_file,

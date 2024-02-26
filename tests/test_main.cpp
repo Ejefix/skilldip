@@ -21,10 +21,9 @@ void test_count(std::shared_ptr<std::vector<RelativeIndex>> rel, std::string dir
     size_t count {};
     for(auto it = rel->begin();it != rel->end();++it)
     {
-       // std::cout<< directory_file << " VS " << it->get_directory_file() << "\n";
         if (directory_file == it->get_directory_file())
         {
-           // std::cout << " file ok \n";
+
             auto vec = it->get_result();
             for (auto &vec_ : vec) {
                 if(vec_.first == word )

@@ -55,17 +55,12 @@ protected:
     std::string directory;
 private:
     size_t time_reading{1};
-
-
 };
 
-class ConfigJSON : public ConverterJSON
+class ConfigJSON final : public ConverterJSON
 {
 public:
-
     ConfigJSON();
-
-
 
     int get_max_responses();
     // удаляет элемент, если не std::string или длинна выше  str_size
@@ -80,14 +75,11 @@ private:
 
 };
 
-class RequestsJSON : public ConverterJSON
+class RequestsJSON final : public ConverterJSON
 {
 public:
-
     RequestsJSON();
-
 private:
-
     void parsing_list() override;
 };
 #endif // CONVERTERJSON_H
