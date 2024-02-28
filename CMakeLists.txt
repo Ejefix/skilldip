@@ -36,7 +36,8 @@ add_custom_command(TARGET Diplom POST_BUILD
 add_custom_command(TARGET Diplom POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
             ${CMAKE_SOURCE_DIR}/requests.json
-            $<TARGET_FILE_DIR:Diplom>)
+            $<TARGET_FILE_DIR:Diplom>
+        )
 
 option(BUILD_TESTS "Build the tests" ON)
 if(BUILD_TESTS)
@@ -46,7 +47,8 @@ if(BUILD_TESTS)
     add_custom_command(TARGET DiplomTests POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
                 ${CMAKE_SOURCE_DIR}/tests/file
-                $<TARGET_FILE_DIR:DiplomTests>/tests/file)
+                $<TARGET_FILE_DIR:DiplomTests>/tests/file
+            )
 
     target_link_libraries(DiplomTests PRIVATE LibDiplom )
     target_include_directories(DiplomTests PRIVATE ${CMAKE_BINARY_DIR})

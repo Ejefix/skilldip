@@ -5,6 +5,7 @@
 #include <functional>
 #include <condition_variable>
 #include <sstream>
+#include <unordered_set>
 #include "readfile.h"
 
 namespace {
@@ -17,35 +18,43 @@ size_t Dictionary::id = 1;
 
 Dictionary::Dictionary()
 {
-
     try {
-
-        if(!std::filesystem::exists("./work"))
+        if(std::filesystem::exists(directory))
         {
-            std::filesystem::create_directories("./work");
-
+            auto json = ConverterJSON::reading_json(directory);
+            for (const auto& item : json.items())
+            {
+                std::string str = item.key();
+                size_t value = item.value();
+                push(str, value);
+            }
         }
-        auto json = ConverterJSON::reading_json(directory);
-        for (const auto& item : json.items())
+        else
         {
-            std::string str = item.key();
-            size_t value = item.value();
-            push(str, value);
+            if(!std::filesystem::exists("./work"))
+            {
+                std::filesystem::create_directories("./work");
+            }
+            else
+            {
+                std::filesystem::remove_all("./work");
+                std::filesystem::create_directories("./work");
+            }
         }
     }
-    catch (const std::exception& e) {
-        std::lock_guard<std::mutex> lock( mutex_cerr_);
-        std::cerr << "error: reading_json: " << e.what() << '\n';
+    catch (const std::runtime_error& e) {        
+        std::cerr << "error: Dictionary() \n" << e.what() << '\n';
+
     }
-    catch (...) {
-        std::lock_guard<std::mutex> lock( mutex_cerr_);
-        std::cerr << "error: reading_json: "  << '\n';
+    catch (...) {        
+        std::cerr << "error: Dictionary() "  << '\n';
+        throw;
     }
 }
 
 Dictionary::~Dictionary()
 {
-    saveToFile();
+
 }
 
 bool Dictionary::insert(const std::string &str)
@@ -85,7 +94,6 @@ void Dictionary::push(const std::string &str, size_t value)
 
 bool Dictionary::saveToFile() const
 {
-
     nlohmann::json js;
     for (const auto& [value, id] : valueToID) {
         js[value] = id;
@@ -100,19 +108,42 @@ bool Dictionary::saveToFile() const
     return true;
 }
 
+std::string Dictionary::get_directory() const
+{
+    return directory;
+}
+
 bool SearchServer::saveToFile(const std::string &directory_file, const std::map<size_t, size_t> &map) const
 {
-    nlohmann::json js;
-    for (const auto& [value, counter] : map) {
-        std::string j = std::to_string(value);
-        js[j] = counter;
-    }
-    std::ofstream file(directory_file);
+    size_t  size = sizeof(size_t);
+    std::ofstream file(directory_file, std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "File creation error " << directory_file << '\n';
         return false;
     }
-    file << js;
+    for (const auto &it : map) {
+
+        file.write(reinterpret_cast<const char*>(&it.first), size);
+        file.write(reinterpret_cast<const char*>(&it.second), size);
+    }
+    file.close();
+    return true;
+}
+
+bool SearchServer::loadFromFile(const std::string &directory_file, std::map<size_t, size_t> &map) const
+{
+    size_t  size = sizeof(size_t);
+    std::ifstream file(directory_file, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "File opening error " << directory_file << '\n';
+        return false;
+    }
+    size_t key, value;
+    while (file.read(reinterpret_cast<char*>(&key), size)
+           && file.read(reinterpret_cast<char*>(&value), size))
+    {
+        map[key] = value;
+    }
     file.close();
     return true;
 }
@@ -141,7 +172,6 @@ std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
 {
     if(config_files_list->empty() )
     {
-
         return std::make_shared<std::vector<RelativeIndex>>();
     }
 
@@ -183,6 +213,7 @@ std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
         }
         ++i;
     }
+    dictionary.saveToFile();
     return relativeIndex;
 }
 
@@ -221,16 +252,16 @@ bool SearchServer::get_answers(int max_responses,const std::string &directory_fi
     }
     file << js_.dump(4);
     file.close();
+    dictionary.saveToFile();
     return ok;
 }
 
 std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_files(const std::shared_ptr<const nlohmann::json> &config_files_list)
 {
-
     std::vector<std::string> files_list;
-
-
     to_string(files_list, config_files_list);
+    control_file(files_list);
+
     int size = files_list.size();
 
     std::vector<std::thread> threads;
@@ -243,91 +274,76 @@ std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_
 
     for(size_t i {}; i < size; ++i)
     {
-        std::hash<std::string> hasher;
-        size_t word_hash = hasher(files_list[i]);
-        std::string json_file =  "./work/" + std::to_string(word_hash);
-
-        bool control{false};
-        for(size_t j {} ; j < i;++j)
-        {
-            if(files_list[i] == files_list[j])
-            {
-                control = true;
-                break;
-            }
-        }
-        if(control){
-
+        if(files_list[i].empty()){
             continue;
         }
-        if(control_read(files_list[i], json_file))
-        {
-            auto foo = [&, i, json_file](){
-                {
-                    std::unique_lock<std::mutex> lock(mutex);
-                    cv.wait(lock, [&] { return counter < SearchServerThreads; });
-                    ++counter;
-                }
-                std::map<size_t, size_t> rez;
-                auto json = ConverterJSON::reading_json(json_file);
-                for (const auto& item : json.items())
-                {
-                    std::string key = item.key();
-                    std::stringstream sstream(key);
-                    size_t key_ ;
-                    sstream >>  key_;
-                    size_t value = item.value();
-                    rez[key_] = value;
-                }
-                auto it = rezult->begin();
-                *(it+i) = rez;
-                {
-                    std::unique_lock<std::mutex> lock(mutex);
-                    --counter;
-                }
-                    cv.notify_one();
-
-            };
-            if(SearchServerThreads == 1)
+        try {
+            std::hash<std::string> hasher;
+            size_t word_hash = hasher(files_list[i]);
+            std::string name_file =  "./work/" + std::to_string(word_hash);
+            if(control_read(files_list[i], name_file))
             {
-                foo();
+                auto foo = [&, i, name_file](){
+                    {
+                        std::unique_lock<std::mutex> lock(mutex);
+                        cv.wait(lock, [&] { return counter < SearchServerThreads; });
+                        ++counter;
+                    }
+                    std::map<size_t, size_t> rez;
+                    loadFromFile(name_file,rez);
+                    auto it = rezult->begin();
+                    *(it+i) = rez;
+                    {
+                        std::unique_lock<std::mutex> lock(mutex);
+                        --counter;
+                    }
+                    cv.notify_one();                  
+                };
+                if(SearchServerThreads == 1)
+                {
+                    foo();
+                }
+                else
+                {
+                    threads.emplace_back(foo);
+                }
             }
             else
             {
-
-                threads.emplace_back(foo);
-            }
-        }
-        else
-        {
-            auto foo = [&, i, json_file](){
-                {
-                    std::unique_lock<std::mutex> lock(mutex);
-                    cv.wait(lock, [&] { return counter < SearchServerThreads; });
-                    ++counter;
-                }
-                auto it = rezult->begin() + i ;
-                auto buffer =  ReadFile::readFile(files_list[i]);
-                *it = parse_buffer(buffer);
-                if(!it->empty())
-                {
-                        saveToFile(json_file,*it);
-                }
-                {
+                auto foo = [&, i, name_file](){
+                    {
+                        std::unique_lock<std::mutex> lock(mutex);
+                        cv.wait(lock, [&] { return counter < SearchServerThreads; });
+                        ++counter;
+                    }
+                    auto it = rezult->begin() + i ;
+                    auto buffer =  ReadFile::readFile(files_list[i]);
+                    *it = parse_buffer(buffer);
+                    if(!it->empty())
+                    {
+                        saveToFile(name_file,*it);
+                    }
+                    {
                         std::unique_lock<std::mutex> lock(mutex);
                         --counter;
                         cv.notify_one();
-                }
-            };
+                    }
+                };
 
-            if(SearchServerThreads == 1)
-            {
-                foo();
+                if(SearchServerThreads == 1)
+                {
+                    foo();
+                }
+                else
+                {
+                    threads.emplace_back(foo);
+                }
             }
-            else
-            {
-                threads.emplace_back(foo);
-            }
+        }
+        catch (const std::runtime_error& e) {
+            std::lock_guard<std::mutex> lock( mutex_cerr_);
+            std::cerr  << e.what() << '\n';
+            continue;
         }
     }
     for (auto& thread : threads) {
@@ -339,7 +355,6 @@ std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_
 std::shared_ptr<std::map<size_t, size_t> > SearchServer::get_result_requests(const std::shared_ptr<const nlohmann::json> &requests_list)
 {
     auto requests = std::make_shared<std::map<size_t, size_t> >();
-
     auto buffer = std::make_shared<std::vector<std::string>>();
     to_string(*buffer, requests_list);
     *requests = parse_buffer(buffer);
@@ -347,33 +362,33 @@ std::shared_ptr<std::map<size_t, size_t> > SearchServer::get_result_requests(con
 
 }
 
-size_t SearchServer::get_id(const std::string &word,std::map<std::string, size_t> &miniBuffer)
+size_t SearchServer::get_id(const std::string &word)
 {
 
-    auto it = miniBuffer.find(word);
-    if (it != miniBuffer.end()) {
-        return it->second;
-    }
-
     dictionary.insert(word);
-    size_t id = dictionary.at(word);
-    miniBuffer[word] = id;
-
-    return id;
+    return dictionary.at(word);
 }
 
 bool SearchServer::control_read(const std::string &directory_file, const std::string &json_file)
 {
-    try {
+    if(directory_file.empty() )
+        return false;
 
-         auto file = Info_file::data_sec(directory_file);
-         auto file_ = Info_file::data_sec(json_file);
-         return file_ > file;
-    }
-    catch (...)
-    {
-         return false;
-    }
+    size_t file;
+
+    file = Info_file::data_sec(directory_file);
+
+    auto foo = [&json_file](){
+        try{
+            return Info_file::data_sec(json_file);
+        }
+        catch (const std::runtime_error& e) {
+
+            return size_t{};
+        }
+    };
+    auto file_ = foo();
+    return file_ > file;
 }
 
 void SearchServer::to_string(std::vector<std::string> &vec, const std::shared_ptr<const nlohmann::json> &list)
@@ -391,10 +406,25 @@ void SearchServer::to_string(std::vector<std::string> &vec, const std::shared_pt
     }
 }
 
+void SearchServer::control_file(std::vector<std::string> &files_list) const
+{
+    std::unordered_set<std::string> files;
+    for (auto &file : files_list)
+    {
+         if(!std::filesystem::exists(file)) {
+            std::cerr << "File is missing: " + file << "\n";
+            file.clear();
+            continue;
+         }
+         if (!files.insert(file).second) {
+            file.clear();
+         }
+    }
+}
+
 std::map<size_t, size_t> SearchServer::parse_buffer(const std::shared_ptr<std::vector<std::string>> buffer)
 {
     try {
-        std::map<std::string, size_t> miniBuffer;
         std::map<size_t, size_t> file;
         for (auto &i : *buffer)
         {
@@ -405,15 +435,14 @@ std::map<size_t, size_t> SearchServer::parse_buffer(const std::shared_ptr<std::v
                 words = transformation(word);
                 for(auto &word_ : words)
                 {
-                    auto id = get_id(word_,miniBuffer);
-                    ++file[id];
+                    ++file[get_id(word_)];
                 }
             }
         }
         buffer->clear();       
         return file;
     }
-    catch (const std::exception& e) {
+    catch (const std::runtime_error& e) {
         buffer->clear();
         std::lock_guard<std::mutex> lock( mutex_cerr_);
         std::cerr << "error: SearchServer::parse_buffer: " << e.what() << '\n';
@@ -423,7 +452,7 @@ std::map<size_t, size_t> SearchServer::parse_buffer(const std::shared_ptr<std::v
         buffer->clear();
         std::lock_guard<std::mutex> lock( mutex_cerr_);
         std::cerr << "error: SearchServer::parse_buffer: unknown error" << '\n';
-        return std::map<size_t, size_t>();
+        throw;
     }
 }
 

@@ -24,12 +24,14 @@ size_t Info_file::data_sec(const std::string &directory_file)
 
 size_t Info_file::size(const std::string &directory_file)
 {
+    if (!std::filesystem::exists(directory_file))
+    {
+        throw std::runtime_error("File is missing: " + directory_file);
+
+    }
     return std::filesystem::file_size(directory_file);
+
 }
-
-//===================================================================================================================
-
-
 
 //===================================================================================================================
 
@@ -75,7 +77,7 @@ bool ConverterJSON::update_list()
             return false;
         }
     }
-    catch (const std::exception& e) {
+    catch (const std::runtime_error& e) {
         std::cerr << "error: " << e.what() << '\n';
         list->clear();
         return false;
@@ -83,33 +85,32 @@ bool ConverterJSON::update_list()
     catch (...) {
         std::cerr << "error\n";
         list->clear();
-        return false;
+        throw;
     }
 }
 
-nlohmann::json ConverterJSON::reading_json(const std::string &directory_file, size_t max_sizeMB )
+nlohmann::json ConverterJSON::reading_json(const std::string &directory_file )
 {
     try {
-        const size_t size_file = Info_file::size(directory_file);
-        if (max_sizeMB *1024*1024 < size_file )
-        {
-            throw std::runtime_error("File size > " + std::to_string(size_file / 1024 / 1024) + " MB in " + directory_file);
+        if (std::filesystem::exists(directory_file))
+        {          
+            nlohmann::json json;
+            std::ifstream file(directory_file);
+            if (file.is_open()) {
+                file >> json;
+            }
+            return json;
         }
-
-         nlohmann::json json;
-         std::ifstream file(directory_file);
-        if (file.is_open()) {
-            file >> json;
-        }
-        return json;
+        return nlohmann::json{};
     }
-    catch (const std::exception& e) {
+    catch (const std::runtime_error& e) {
 
-        std::cerr << "error: " << e.what() << '\n';
+        std::cerr << e.what() << '\n';
         return nlohmann::json{};
     }
     catch (...) {
-        return nlohmann::json{};
+        std::cerr << "error: ConverterJSON::reading_json\n";
+        throw;
     }
 }
 
@@ -149,11 +150,13 @@ bool ConfigJSON::parsing_config()
         filter_str(list,300);
         return true;
     }
-    catch (const std::exception& e) {
+    catch (const std::runtime_error& e) {
         std::cerr << "error: " << e.what() << '\n';
+        return false;
     }
     catch (...) {
         std::cerr << "error: reading_config()";
+        throw;
     }
     return false;
 }
@@ -180,11 +183,12 @@ bool ConfigJSON::control_config( const std::string &version, const std::string &
         }
         return true;
     }
-    catch (const std::exception& e) {
+    catch (const std::runtime_error& e) {
         std::cerr << "error: " << e.what() << '\n';
     }
     catch (...) {
-        std::cerr << "error: \n";
+        std::cerr << "error: control_config\n";
+        throw;
     }
     return false;
 
@@ -202,7 +206,7 @@ void ConfigJSON::parsing_list()
             parsing_config();
         }
     }
-    catch (const std::exception& e) {
+    catch (const std::runtime_error& e) {
 
         std::cerr << "error: " << e.what() << '\n';
          list->clear();
@@ -210,6 +214,7 @@ void ConfigJSON::parsing_list()
     }
     catch (...) {
           list->clear();
+          throw;
     }
 }
 
@@ -226,14 +231,15 @@ void RequestsJSON::parsing_list()
           }
 
     }
-    catch (const std::exception& e) {
+    catch (const std::runtime_error& e) {
         std::cerr << "error: " << e.what() << '\n';
         list->clear();
     }
     catch (...) {
 
-        std::cerr << "error\n";
+        std::cerr << "error RequestsJSON::parsing_list\n";
          list->clear();
+         throw;
         }
 }
 

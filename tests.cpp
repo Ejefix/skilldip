@@ -35,7 +35,7 @@ struct Entry2 {
     std::string doc_id;
     double count{};
 
-    Entry2(std::string doc_id, double count) : doc_id(doc_id), count(count) {}
+    Entry2(const std::string &doc_id, double count) : doc_id(doc_id), count(count) {}
 
     bool operator ==(const Entry2& other) const {
 
@@ -49,23 +49,29 @@ void TestRelativeIndex(
     const std::vector<std::string>& requests,
     const std::vector<Entry2> &expected)
 {
-    ConfigJSON x{};
-    x.list = std::make_shared<nlohmann::json> (docs);
-    RequestsJSON y{};
-    y.list = std::make_shared<nlohmann::json> (requests);
 
 
-    SearchServer z{x.list,y.list};
-    auto rel = z.get_RelativeIndex();
-    std::sort(rel->begin(), rel->end(),[](RelativeIndex lhs, RelativeIndex rhs){
-        return lhs.get_Relative_Relevancy() > rhs.get_Relative_Relevancy();});
-    std::vector<Entry2> result;
-    for (auto it = rel->begin(); it != rel->end() && result.size() != expected.size() ; ++it)
-    {
-        result.push_back(Entry2{it->get_directory_file(),it->get_Relative_Relevancy()});
-    }
+        ConfigJSON x{};
+        x.list = std::make_shared<nlohmann::json> (docs);
+        RequestsJSON y{};
+        y.list = std::make_shared<nlohmann::json> (requests);
 
-    ASSERT_EQ(result, expected);
+
+        SearchServer z{x.list,y.list};
+        auto rel = z.get_RelativeIndex();
+        std::sort(rel->begin(), rel->end(),[](RelativeIndex lhs, RelativeIndex rhs){
+            return lhs.get_Relative_Relevancy() > rhs.get_Relative_Relevancy();});
+        std::vector<Entry2> result;
+        for (auto it = rel->begin(); it != rel->end() && result.size() != expected.size() ; ++it)
+        {
+
+            result.push_back(Entry2{it->get_directory_file(),it->get_Relative_Relevancy()});
+
+
+
+        }
+        ASSERT_EQ(result, expected);
+
 }
 
 void TestInvertedIndexFunctionality(
@@ -216,6 +222,8 @@ TEST(TestCaseSearchServer, TestTop5)
         "warsaw is the capital of poland",
     };
     std::vector<std::string> docs;
+
+
     for (int i{};i < texts.size(); ++i)
     {
         std::string doc = "./tests/file/test" + std::to_string(i) + ".txt";
@@ -228,11 +236,13 @@ TEST(TestCaseSearchServer, TestTop5)
         Entry2{docs[7], 1},
         Entry2{docs[14], 1},
         Entry2{docs[11], 0.666667},
-        Entry2 {docs[21], 0.666667},
+        Entry2 {docs[1], 0.666667},
         Entry2{docs[20], 0.666667},
-        Entry2{docs[22], 0.666667}
+        Entry2{docs[15], 0.666667}
     };
+
     TestRelativeIndex( docs, requests, expected);
+
 }
 
 

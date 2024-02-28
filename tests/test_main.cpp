@@ -72,8 +72,8 @@ int main(int argc, char **argv) {
                 y.set_directory("./tests/file/requesssts.json");
                 y.set_directory("./tests/file/requests.json");
 
-                std::cout  << "test config start " << (!test_config(x, "./tests/file/config1.json") ? "test true " : "test false") << "\n\n";
-                std::cout  << "test config start " << (!test_config(x, "./tests/file/config2.json") ? "test true" : "test false")<< "\n\n";
+                std::cout  << "test config start \n" << (!test_config(x, "./tests/file/config1.json") ? "test true " : "test false") << "\n\n";
+                std::cout  << "test config start \n" << (!test_config(x, "./tests/file/config2.json") ? "test true" : "test false")<< "\n\n";
                 std::cout  << "test config start \n" << (!test_config(x, "./tests/file/confssig.json") ? "test true" : "test false")<< "\n\n";
                 std::cout  << "test config start \n" << (test_config(x, "./tests/file/config.json") ? "test true" : "test false")<< "\n\n";
 

@@ -32,7 +32,7 @@ std::shared_ptr<std::vector<std::string>> ReadFile::readFile(const std::string &
 
                     readFileToBuffer(directory_file, &((*buffer)[i][0]), buffer->at(0).size() * i, buffer->at(i).size());
                 }
-                catch (const std::exception& e) {
+                catch (const std::runtime_error& e) {
                     if (!errorOccurred)
                     {
                         errorOccurred = true;
@@ -50,6 +50,7 @@ std::shared_ptr<std::vector<std::string>> ReadFile::readFile(const std::string &
                         std::cerr << "error "  << '\n';
                     }
                     buffer->at(i).clear();
+                    throw;
                 }
             }
             else{
@@ -58,7 +59,7 @@ std::shared_ptr<std::vector<std::string>> ReadFile::readFile(const std::string &
                         try {
                             readFileToBuffer(directory_file, &((*buffer)[i][0]), buffer->at(0).size() * i, buffer->at(i).size());
                         }
-                        catch (const std::exception& e) {
+                        catch (const std::runtime_error& e) {
                             if (!errorOccurred)
                             {
                                 errorOccurred = true;
@@ -76,6 +77,7 @@ std::shared_ptr<std::vector<std::string>> ReadFile::readFile(const std::string &
                                 std::cerr << "error "  << '\n';
                             }
                             buffer->at(i).clear();
+                            throw;
                         }
                     });}
         }
@@ -84,12 +86,18 @@ std::shared_ptr<std::vector<std::string>> ReadFile::readFile(const std::string &
         }
         return buffer;
     }
+
+    catch (const std::runtime_error &e){
+        std::lock_guard<std::mutex> lock(mutex_cerr_);
+        std::cerr << e.what() << "\n";
+        return std::make_shared<std::vector<std::string>>();
+    }
     catch (...) {
         {
             std::lock_guard<std::mutex> lock(mutex_cerr_);
             std::cerr << "file " << directory_file << " is missing \n";
         }
-        return std::make_shared<std::vector<std::string>>();
+        throw;
     }
 
 }

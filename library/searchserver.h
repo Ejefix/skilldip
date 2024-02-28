@@ -15,12 +15,12 @@ public:
     size_t at(const std::string &value)const;
     std::string at(size_t id)const;
     bool saveToFile() const;
+    std::string get_directory()const ;
 
 private:
     void push (const std::string &str,size_t id);
     std::unordered_map<std::string, size_t> valueToID;
     std::unordered_map<size_t, std::string> idToValue;
-
     static size_t id;
     std::string directory = "./work/dictionary.json";
 
@@ -51,12 +51,12 @@ private:
     std::map<size_t, size_t> parse_buffer(const std::shared_ptr<std::vector<std::string>> buffer);
 
     // потоко безопастно
-    size_t get_id(const std::string &word,std::map<std::string, size_t> &miniBuffer);
+    size_t get_id(const std::string &word);
 
     bool saveToFile(const std::string &directory_file, const std::map<size_t, size_t> &map) const;
-
+    bool loadFromFile(const std::string &directory_file, std::map<size_t, size_t> &map) const;
     //вернем true если файл уже читался
-    static bool control_read(const std::string &directory_file, const std::string &json_file );
+    bool control_read(const std::string &directory_file, const std::string &json_file );
 
      //результат чтения config.json
     const std::shared_ptr<const nlohmann::json> config_files_list;
@@ -65,7 +65,7 @@ private:
 
     // переделает всё в символы
     void to_string(std::vector<std::string> &vec, const std::shared_ptr<const nlohmann::json> &list);
-
+    void control_file( std::vector<std::string> &files_list) const;
     //вернет результат с таким же индексом соответствующим config_files_list
     std::shared_ptr<std::vector<std::map<size_t, size_t>>> get_result_files(const std::shared_ptr<const nlohmann::json> &config_files_list);
     std::shared_ptr<std::map<size_t, size_t>> get_result_requests(const std::shared_ptr<const nlohmann::json> &requests_list) ;

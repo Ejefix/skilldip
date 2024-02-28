@@ -38,7 +38,7 @@ public:
 
     std::shared_ptr<nlohmann::json> get_list();
     void set_directory(std::string directory);
-    static nlohmann::json reading_json(const std::string &directory_file, size_t max_sizeMB = 100)  ; // примрено 100 MB
+    static nlohmann::json reading_json(const std::string &directory_file);
 
 protected:
     virtual void parsing_list() = 0;
