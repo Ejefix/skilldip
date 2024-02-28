@@ -60,9 +60,15 @@ void TestRelativeIndex(
     std::sort(rel->begin(), rel->end(),[](RelativeIndex lhs, RelativeIndex rhs){
         return lhs.get_Relative_Relevancy() > rhs.get_Relative_Relevancy();});
     std::vector<Entry2> result;
-    for (auto it = rel->begin(); it != rel->end() && result.size() != expected.size() ; ++it)
+
+    for (auto it = rel->begin(); it != rel->end() && result.size() < expected.size() ; ++it)
     {
-        result.push_back(Entry2{it->get_directory_file(),it->get_Relative_Relevancy()});
+        try {
+            result.push_back(Entry2{it->get_directory_file(),it->get_Relative_Relevancy()});
+        } catch (...) {
+            std::cout << "TestRelativeIndex -> result.push_back error \n";
+            throw;
+        }
     }
 
     ASSERT_EQ(result, expected);

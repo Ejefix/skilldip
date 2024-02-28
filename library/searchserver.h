@@ -1,8 +1,10 @@
 #ifndef SEARCHSERVER_H
 #define SEARCHSERVER_H
-#include "converterjson.h"
+#include "nlohmann/json_fwd.hpp"
+#include <map>
+#include <memory>
+#include <unordered_map>
 #include "relativeindex.h"
-
 
 class Dictionary final
 {

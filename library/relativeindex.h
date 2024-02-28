@@ -1,6 +1,5 @@
 #ifndef RELATIVEINDEX_H
 #define RELATIVEINDEX_H
-
 #include <string>
 #include <vector>
 

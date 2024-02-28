@@ -1,5 +1,5 @@
 #include "relativeindex.h"
-#include <iostream>
+
 size_t RelativeIndex::max_relative = 0;
 
 RelativeIndex::RelativeIndex(const std::string &directory_file,
