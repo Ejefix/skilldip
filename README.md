@@ -50,8 +50,12 @@ cmake --build .
 ctest
 ```
 или мои тесты
+####T1 - тесты на ошибки
+####T2 n- тесты потоков, где n количество потоков
 ```
 ./DiplomTests
+./DiplomTests T1   
+./DiplomTests T2 22
 ```
 Использование
 

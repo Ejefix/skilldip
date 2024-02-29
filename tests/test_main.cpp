@@ -58,11 +58,36 @@ void test_timeRequests(std::string directory_file)
     std::cout << "test time Requests : " << duration.count() << " ms" << std::endl;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char *argv[]) {
+    int th = THReads::num_threads;
+    std::pair<double,int> count{99999,99999};
+    for(int i{1}; i < argc; ++i) {
+        if (strcmp(argv[i], "T1") == 0) {
+            th = 0;
+            break;
+        }
+        if (strcmp(argv[i], "T2") == 0) {
+            test = 1;
+            maxThreads = 1;
+            continue;
+        }
+        if (i == 2)
+        {
+             try {
+                th = std::stoi(argv[i]);
+                if(th > THReads::num_threads)
+                    th = THReads::num_threads;
+             } catch (const std::invalid_argument& e) {
+                th = THReads::num_threads;
+             }
+            break;
+        }
+    }
+
 
     try {
 
-        while (test <= THReads::num_threads){
+        while (test <= th){
 
             auto start = std::chrono::high_resolution_clock::now();
 
@@ -116,6 +141,7 @@ int main(int argc, char **argv) {
                 auto rel = z.get_RelativeIndex();
                 auto end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double, std::milli> duration = end - start;
+
                 times_.push_back(std::make_pair(duration.count(),maxThreads));
             }
             ++test;
@@ -123,10 +149,16 @@ int main(int argc, char **argv) {
         }
         for(auto &j:times_)
         {
+            if (count.first > j.first)
+            {
+                count = j;
+            }
             std::cout << "full  time : " << j.first << " ms, " ;
             std::cout << " maxThreads : " << j.second  << "\n";
         }
-
+        std::cout << "\n minimum  time : \n"  ;
+        std::cout << "full  time : " << count.first << " ms, " ;
+        std::cout << " maxThreads : " << count.second  << "\n";
         return 0;
     } catch (...) {
         std::cerr << "main error! \n";
