@@ -2,6 +2,7 @@
 #define CONVERTERJSON_H
 #include "nlohmann/json.hpp"
 #include <thread>
+#include "relativeindex.h"
 
 namespace THReads {
 inline const unsigned int num_threads{
@@ -11,12 +12,16 @@ inline const unsigned int num_threads{
 struct Entry;
 struct Entry2;
 
-class Info_file final
+class Info final
 {
 public:
-    static size_t data_sec (const std::string &directory_file);
-    static size_t size(const std::string &directory_file);
+    // @ return time seconds
+    static size_t time_file (const std::string &directory_file);
 
+    static size_t size_file(const std::string &directory_file);
+
+    // @ return "%Y-%m-%d %H:%M:%S" current time
+    static std::string get_time();
 };
 
 
@@ -36,13 +41,15 @@ public:
         const std::vector<std::string>& requests,
         const std::vector<Entry2> &expected);
 
-    std::shared_ptr<nlohmann::json> get_list();
-    void set_directory(std::string directory);
+    std::shared_ptr<nlohmann::json> get_list(bool forcibly = false);
+    virtual void set_directory(const std::string &directory);
+    std::string get_directory();
     static nlohmann::json reading_json(const std::string &directory_file);
-
+    static bool saveToFile(const std::string &directory_file, const nlohmann::ordered_json &js);
 protected:
-    virtual void parsing_list() = 0;
-    bool update_list();
+
+    virtual bool parsing_list(bool forcibly) = 0;
+    virtual bool update_list(bool forcibly);
     std::shared_ptr<nlohmann::json> list;
     std::string directory;
 private:
@@ -55,23 +62,36 @@ public:
     ConfigJSON();
 
     int get_max_responses();
+    void set_directory(const std::string &directory)override;
     // удаляет элемент, если не std::string или длинна выше  str_size
     static void filter_str(std::shared_ptr<nlohmann::json> list,int str_size);
 
 private:
-    void parsing_list() override;
+
     // контроль шапки
     bool control_config(const std::string &version, const std::string &project_name);
     bool parsing_config();
-    int max_responses{};
 
+    bool parsing_list(bool forcibly) override;
+    bool update_list(bool forcibly) override;
+
+    int max_responses{};
+    std::string info_file = "./js/config.brb";
 };
 
 class RequestsJSON final : public ConverterJSON
 {
 public:
     RequestsJSON();
+    void set_directory(const std::string &directory)override;
 private:
-    void parsing_list() override;
+    bool parsing_list(bool forcibly) override;
+    bool update_list(bool forcibly) override;
+    std::string info_file = "./js/requests.brb";
 };
+
+
+
+
+
 #endif // CONVERTERJSON_H

@@ -31,14 +31,14 @@ Dictionary::Dictionary()
         }
         else
         {
-            if(!std::filesystem::exists("./work"))
+            if(!std::filesystem::exists("./dictionary"))
             {
-                std::filesystem::create_directories("./work");
+                std::filesystem::create_directories("./dictionary");
             }
             else
             {
-                std::filesystem::remove_all("./work");
-                std::filesystem::create_directories("./work");
+                std::filesystem::remove_all("./dictionary");
+                std::filesystem::create_directories("./dictionary");
             }
         }
     }
@@ -160,9 +160,9 @@ SearchServer::SearchServer(const std::shared_ptr<const nlohmann::json>& config_f
     if (SearchServerThreads <  1 || SearchServerThreads > THReads::num_threads)
         SearchServerThreads = THReads::num_threads;
 
-    if(!std::filesystem::exists("./work"))
+    if(!std::filesystem::exists("./dictionary"))
     {
-        std::filesystem::create_directories("./work");
+        std::filesystem::create_directories("./dictionary");
 
     }
     RelativeIndex::max_relative = 0;
@@ -170,15 +170,17 @@ SearchServer::SearchServer(const std::shared_ptr<const nlohmann::json>& config_f
 
 std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
 {
-    if(config_files_list->empty() )
+    if (config_files_list == nullptr || requests_list == nullptr)
+    {
+        std::cout << config_files_list << " " << requests_list << "\n";
+        throw std::runtime_error{"class SearchServer -> Error list nullptr\n"};
+
+    }
+    if(config_files_list->empty() || requests_list->empty())
     {
         return std::make_shared<std::vector<RelativeIndex>>();
     }
 
-    if( requests_list->empty())
-    {
-        return std::make_shared<std::vector<RelativeIndex>>();
-    }
     auto result_files = get_result_files(config_files_list);
     size_t i{};
     auto result_requests = get_result_requests(requests_list);
@@ -217,45 +219,6 @@ std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
     return relativeIndex;
 }
 
-bool SearchServer::get_answers(int max_responses,const std::string &directory_file)
-{
-    bool ok{true};
-    auto rel = get_RelativeIndex();
-    std::sort(rel->begin(), rel->end(),[](RelativeIndex lhs, RelativeIndex rhs){
-        return lhs.get_Relative_Relevancy() > rhs.get_Relative_Relevancy();});
-
-    auto it = rel->begin();
-
-    nlohmann::ordered_json js_;
-    nlohmann::ordered_json js;
-    auto now = std::chrono::system_clock::now();
-    auto now_c = std::chrono::system_clock::to_time_t(now);
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S");
-    js_["data"] = ss.str();
-
-    for (int i{}; it !=rel->end() && i < max_responses; ++i,++it)
-    {
-        js[it->get_directory_file()] = it->get_Relative_Relevancy();
-    }
-    if(js.empty())
-    {
-        js_["answers"] = "false";
-        ok = false;
-    }
-
-    else js_["answers"] = js;
-    std::ofstream file(directory_file);
-    if (!file.is_open()) {
-        std::cerr << "File creation error " << directory_file << '\n';
-        ok = false;
-    }
-    file << js_.dump(4);
-    file.close();
-    dictionary.saveToFile();
-    return ok;
-}
-
 std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_files(const std::shared_ptr<const nlohmann::json> &config_files_list)
 {
     std::vector<std::string> files_list;
@@ -280,7 +243,7 @@ std::shared_ptr<std::vector<std::map<size_t, size_t>>> SearchServer::get_result_
         try {
             std::hash<std::string> hasher;
             size_t word_hash = hasher(files_list[i]);
-            std::string name_file =  "./work/" + std::to_string(word_hash);
+            std::string name_file =  "./dictionary/" + std::to_string(word_hash);
             if(control_read(files_list[i], name_file))
             {
                 auto foo = [&, i, name_file](){
@@ -376,11 +339,11 @@ bool SearchServer::control_read(const std::string &directory_file, const std::st
 
     size_t file;
 
-    file = Info_file::data_sec(directory_file);
+    file = Info::time_file(directory_file);
 
     auto foo = [&json_file](){
         try{
-            return Info_file::data_sec(json_file);
+            return Info::time_file(json_file);
         }
         catch (const std::runtime_error& e) {
 

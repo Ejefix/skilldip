@@ -22,7 +22,7 @@ private:
     std::unordered_map<std::string, size_t> valueToID;
     std::unordered_map<size_t, std::string> idToValue;
     static size_t id;
-    std::string directory = "./work/dictionary.json";
+    std::string directory = "./dictionary/dictionary.json";
 
 };
 
@@ -35,7 +35,6 @@ public:
 
     virtual ~SearchServer(){};
     std::shared_ptr<std::vector<RelativeIndex>> get_RelativeIndex();
-    bool get_answers(int max_responses, const std::string &directory_file = "./answers.json");
 
     // возможно захотим распарсить ссылки или есть другие требования
     // а может хотите искать константное слово, учитывая регистр и другие факторы

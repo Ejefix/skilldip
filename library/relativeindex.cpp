@@ -14,9 +14,10 @@ RelativeIndex::RelativeIndex(const std::string &directory_file,
     {
         RelativeIndex::max_relative = relative;
     }
+
 }
 
-double RelativeIndex::get_relative()
+double RelativeIndex::get_relative()const
 {
     return relative;
 }
@@ -26,17 +27,17 @@ size_t RelativeIndex::get_max_relative()
     return RelativeIndex::max_relative;
 }
 
-double RelativeIndex::get_Relative_Relevancy()
+double RelativeIndex::get_Relative_Relevancy()const
 {
     return relative/max_relative;
 }
 
-std::string RelativeIndex::get_directory_file()
+std::string RelativeIndex::get_directory_file()const
 {
     return directory_file;
 }
 
-std::vector<std::pair<std::string, size_t> > RelativeIndex::get_result()
+std::vector<std::pair<std::string, size_t> > RelativeIndex::get_result()const
 {
     return result;
 }

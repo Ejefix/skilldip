@@ -13,6 +13,7 @@ add_library(LibDiplom
     searchserver.h searchserver.cpp
     relativeindex.h relativeindex.cpp
     readfile.h readfile.cpp
+    answersjson.h answersjson.cpp
 )
 
 

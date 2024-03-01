@@ -13,7 +13,7 @@ void WriteTextToFile(const std::string& filename, const std::string& text) {
     std::ofstream file(filename);
     if (!file.is_open()) {
 
-        std::cerr << "Не удалось открыть файл: " << filename << std::endl;
+        std::cerr << "File opening error " << filename << std::endl;
             return;
     }
     file << text;
@@ -242,7 +242,6 @@ TEST(TestCaseSearchServer, TestTop5)
     };
 
     TestRelativeIndex( docs, requests, expected);
-
 }
 
 

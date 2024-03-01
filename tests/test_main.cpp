@@ -3,19 +3,25 @@
 #include <iostream>
 #include <string>
 
+//#define MYTEST
+
 int maxThreads = 0;
 int test{0};
 std::vector<std::pair<double,int>> times_;
 
-bool test_config(ConfigJSON &x,std::string directory_file)
+#ifdef MYTEST
+bool test_config(std::string directory_file)
 {
+    ConfigJSON x{};
     x.set_directory( directory_file);
-    if(x.get_list()->empty())
+    auto list = x.get_list();
+    if(list == nullptr || list->empty())
     {
         return false;
     }
     return true;
 }
+#endif
 void test_count(std::shared_ptr<std::vector<RelativeIndex>> rel, std::string directory_file, std::string word, size_t result)
 {
     size_t count {};
@@ -25,7 +31,7 @@ void test_count(std::shared_ptr<std::vector<RelativeIndex>> rel, std::string dir
         {
 
             auto vec = it->get_result();
-            for (auto &vec_ : vec) {
+            for (auto &vec_ : vec) {                
                 if(vec_.first == word )
                 {
                     count = vec_.second;
@@ -47,10 +53,12 @@ void test_timeRequests(std::string directory_file)
 {
     auto start = std::chrono::high_resolution_clock::now();
     ConfigJSON x{};
+
     x.set_directory("./tests/file/config.json");
     RequestsJSON y{};
     y.set_directory(directory_file);
-    SearchServer z{x.get_list(), y.get_list(),maxThreads};
+    std::cout <<  "new directory : " << y.get_directory() << "\n";
+    SearchServer z{x.get_list(), y.get_list()};
     auto rel = z.get_RelativeIndex();
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -81,7 +89,7 @@ int main(int argc, char *argv[]) {
                 th = THReads::num_threads;
              }
             break;
-        }
+        }       
     }
 
 
@@ -92,20 +100,14 @@ int main(int argc, char *argv[]) {
             auto start = std::chrono::high_resolution_clock::now();
 
             if(test == 0){
-                ConfigJSON x{};
-                RequestsJSON y{};
-                y.set_directory("./tests/file/requesssts.json");
-                y.set_directory("./tests/file/requests.json");
-
-                std::cout  << "test config start \n" << (!test_config(x, "./tests/file/config1.json") ? "test true " : "test false") << "\n\n";
-                std::cout  << "test config start \n" << (!test_config(x, "./tests/file/config2.json") ? "test true" : "test false")<< "\n\n";
-                std::cout  << "test config start \n" << (!test_config(x, "./tests/file/confssig.json") ? "test true" : "test false")<< "\n\n";
-                std::cout  << "test config start \n" << (test_config(x, "./tests/file/config.json") ? "test true" : "test false")<< "\n\n";
-
-
+#ifdef MYTEST
+                std::cout  << "test config start \n" << (!test_config( "./tests/file/config1.json") ? "test true " : "test false") << "\n\n";
+                std::cout  << "test config start \n" << (!test_config( "./tests/file/config2.json") ? "test true" : "test false")<< "\n\n";
+                std::cout  << "test config start \n" << (!test_config( "./tests/file/confssig.json") ? "test true" : "test false")<< "\n\n";
+                std::cout  << "test config start \n" << (test_config( "./tests/file/config.json") ? "test true" : "test false")<< "\n\n";
+#endif
                 test_timeRequests("./tests/file/requests.json");
                 std::cout << "standart requests.json \n\n";
-
 
                 test_timeRequests("./tests/file/requests2.json");
                 std::cout << "standart requests.json x5 \n\n";
@@ -117,12 +119,15 @@ int main(int argc, char *argv[]) {
                 std::cout << "standart requests.json x40 \n\n";
 
 
+                ConfigJSON x{};
+                RequestsJSON y{};
+                x.set_directory("./tests/file/config.json");
+                y.set_directory("./tests/file/requests.json");
                 SearchServer z{x.get_list(), y.get_list()};
-
                 auto  rel = z.get_RelativeIndex();
 
-                test_count(rel, "./tests/file/Biggers2.txt", "test2",300);
-                test_count(rel, "./tests/file/Biggers2.txt", "test",200);
+                test_count(rel, "./tests/file/Biggers2.txt", "test2", 300);
+                test_count(rel, "./tests/file/Biggers2.txt", "test", 200);
                 test_count(rel, "./tests/file/Biggers2.txt", "test4", 0);
 
                 auto end = std::chrono::high_resolution_clock::now();
@@ -131,7 +136,8 @@ int main(int argc, char *argv[]) {
             }
             else
             {
-                std::cout << "wait, thread test " << maxThreads << '\n';
+                std::cout << "test on dynamic files, thread test " << maxThreads << '\n';
+                std::filesystem::remove_all("./dictionary");
                 ConfigJSON x{};
                 RequestsJSON y{};
                 x.set_directory("./tests/file/config4.json");
@@ -141,7 +147,6 @@ int main(int argc, char *argv[]) {
                 auto rel = z.get_RelativeIndex();
                 auto end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double, std::milli> duration = end - start;
-
                 times_.push_back(std::make_pair(duration.count(),maxThreads));
             }
             ++test;
@@ -156,11 +161,15 @@ int main(int argc, char *argv[]) {
             std::cout << "full  time : " << j.first << " ms, " ;
             std::cout << " maxThreads : " << j.second  << "\n";
         }
-        std::cout << "\n minimum  time : \n"  ;
-        std::cout << "full  time : " << count.first << " ms, " ;
+        std::cout << "\nminimum  time : \n"  ;
+        std::cout << " \n" << count.first << " ms, " ;
         std::cout << " maxThreads : " << count.second  << "\n";
         return 0;
-    } catch (...) {
+    }
+    catch (const std::runtime_error& e) {
+        std::cerr << "main  " << e.what() << '\n';
+    }
+    catch (...) {
         std::cerr << "main error! \n";
     }
 }

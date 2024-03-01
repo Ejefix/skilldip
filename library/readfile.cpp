@@ -15,7 +15,7 @@ std::shared_ptr<std::vector<std::string>> ReadFile::readFile(const std::string &
         if (maxThreads < 1 || maxThreads > THReads::num_threads)
             maxThreads = THReads::num_threads;
 
-        size_t size_file = Info_file::size(directory_file);
+        size_t size_file = Info::size_file(directory_file);
         const auto buffer = std::make_shared<std::vector<std::string>>();
 
         set_buffer(*buffer, size_file,maxThreads,max_sizeMB );
