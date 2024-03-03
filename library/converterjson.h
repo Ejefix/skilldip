@@ -63,10 +63,12 @@ public:
 
     int get_max_responses();
     void set_directory(const std::string &directory)override;
-    // удаляет элемент, если не std::string или длинна выше  str_size
-    static void filter_str(std::shared_ptr<nlohmann::json> list,int str_size);
 
+    //minimum str_size = 1;
+    void set_str_size(int str_size);
 private:
+    // удаляет элемент, если не std::string или длинна выше  str_size
+    void filter_str(std::shared_ptr<nlohmann::json> list,int str_size);
 
     // контроль шапки
     bool control_config(const std::string &version, const std::string &project_name);
@@ -74,7 +76,7 @@ private:
 
     bool parsing_list(bool forcibly) override;
     bool update_list(bool forcibly) override;
-
+    int str_size{300};
     int max_responses{};
     std::string info_file = "./js/config.brb";
 };

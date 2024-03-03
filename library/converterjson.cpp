@@ -48,6 +48,7 @@ void ConfigJSON::filter_str(std::shared_ptr<nlohmann::json> filter_list,int str_
     {
         if (!it->is_string() || it->get<std::string>().size() > str_size )
         {
+            std::cout << it->dump(4) << " <-- removed from the search query.\n";
             it = filter_list->erase(it);
         }
         else
@@ -57,12 +58,10 @@ void ConfigJSON::filter_str(std::shared_ptr<nlohmann::json> filter_list,int str_
     }
 }
 
-
 void ConverterJSON::set_directory(const std::string &directory)
 {
     time_reading = 1;
     this->directory = directory;
-
 }
 
 std::string ConverterJSON::get_directory()
@@ -173,6 +172,13 @@ void ConfigJSON::set_directory(const std::string &directory)
 
 }
 
+void ConfigJSON::set_str_size(int str_size)
+{
+    if(str_size < 1)
+        return;
+    this->str_size = str_size;
+}
+
 bool ConfigJSON::parsing_config()
 {
     try
@@ -198,7 +204,7 @@ bool ConfigJSON::parsing_config()
         if (max_responses < 1)
             throw std::runtime_error("max_responses no correct");
         *list = (*list)["files"];
-        filter_str(list,300);
+        filter_str(list,str_size);
         return true;
     }
     catch (const std::runtime_error& e) {
