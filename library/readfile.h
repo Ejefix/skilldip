@@ -5,8 +5,6 @@
 #include <string>
 #include <vector>
 
-
-
 class ReadFile  final
 {
 public:

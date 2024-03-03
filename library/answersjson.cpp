@@ -8,11 +8,6 @@ Answers::Answers(std::shared_ptr<std::vector<RelativeIndex>> rel):rel{rel}
     directory = "./answers.json";
 }
 
-Answers::Answers()
-{
-    directory = "./answers.json";
-}
-
 
 
 bool Answers::get_answers(int max_responses)const

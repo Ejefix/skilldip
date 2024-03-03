@@ -22,11 +22,6 @@ double RelativeIndex::get_relative()const
     return relative;
 }
 
-size_t RelativeIndex::get_max_relative()
-{
-    return RelativeIndex::max_relative;
-}
-
 double RelativeIndex::get_Relative_Relevancy()const
 {
     return relative/max_relative;

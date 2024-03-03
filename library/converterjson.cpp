@@ -15,8 +15,6 @@ size_t Info::time_file(const std::string &directory_file)
 {
     if (!std::filesystem::exists(directory_file)) {
          throw std::runtime_error("File is missing: " + directory_file);
-//        std::cerr << "File is missing: " + directory_file << '\n';
-//        return size_t{};
     }
     auto ftime = std::filesystem::last_write_time(directory_file); 
     auto duration = ftime.time_since_epoch(); 
@@ -349,9 +347,7 @@ bool RequestsJSON::update_list(bool forcibly)
             return false;
         }
     }
-
     return ConverterJSON::update_list(forcibly);
-
 }
 
 RequestsJSON::RequestsJSON():ConverterJSON()

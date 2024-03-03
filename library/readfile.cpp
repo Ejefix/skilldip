@@ -129,14 +129,12 @@ void ReadFile::set_buffer(std::vector<std::string > &buffer,const size_t size_fi
 
 void ReadFile::readFileToBuffer(const std::string &directory_file, char *buffer, int start, int stop)
 {
-
     std::ifstream input_file(directory_file, std::ios::binary);
 
     if (!input_file.is_open()) {
         throw std::runtime_error("File is missing: " + directory_file);
     } else
     {
-
         input_file.seekg(start, std::ios::beg);
         input_file.read(buffer, stop);
     }

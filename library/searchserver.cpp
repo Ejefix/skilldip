@@ -163,7 +163,6 @@ SearchServer::SearchServer(const std::shared_ptr<const nlohmann::json>& config_f
     if(!std::filesystem::exists("./dictionary"))
     {
         std::filesystem::create_directories("./dictionary");
-
     }
     RelativeIndex::max_relative = 0;
 }
@@ -174,7 +173,6 @@ std::shared_ptr<std::vector<RelativeIndex>> SearchServer::get_RelativeIndex()
     {
         std::cout << config_files_list << " " << requests_list << "\n";
         throw std::runtime_error{"class SearchServer -> Error list nullptr\n"};
-
     }
     if(config_files_list->empty() || requests_list->empty())
     {
