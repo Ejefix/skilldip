@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 
-//#define MYTEST
+#define MYTEST
 
 int maxThreads = 0;
 int test{0};
